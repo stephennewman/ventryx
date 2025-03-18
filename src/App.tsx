@@ -11,7 +11,7 @@ interface PlaidEvent {
   metadata: Record<string, any>;
 }
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5176';
+const API_URL = `${import.meta.env.VITE_API_URL}/api` || 'http://localhost:5176/api';
 
 const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -51,13 +51,21 @@ const App: React.FC = () => {
           }),
         });
 
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+          throw new Error(`Unexpected response type: ${contentType}`);
+        }
+
         if (!response.ok) {
           const errorData = await response.json();
-          throw new Error(errorData.error || 'Failed to create link token');
+          throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
         }
 
         const data = await response.json();
         console.log('Link token created successfully:', data);
+        if (!data.link_token) {
+          throw new Error('No link token in response');
+        }
         setLinkToken(data.link_token);
       } catch (err) {
         console.error('Error creating link token:', err);
@@ -86,9 +94,14 @@ const App: React.FC = () => {
         }),
       });
 
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        throw new Error(`Unexpected response type: ${contentType}`);
+      }
+
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to fetch transactions');
+        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
       }
 
       const data = await response.json();
@@ -118,9 +131,14 @@ const App: React.FC = () => {
         }),
       });
 
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        throw new Error(`Unexpected response type: ${contentType}`);
+      }
+
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to exchange token');
+        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
       }
 
       const data = await response.json();

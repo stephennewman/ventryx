@@ -49,13 +49,13 @@ const configuration = new Configuration({
 
 const client = new PlaidApi(configuration);
 
-app.get("/", (req, res) => {
+app.get("/api", (req, res) => {
   res.json({status: "ok"});
 });
 
-app.post("/", async (req, res) => {
+app.post("/api", async (req, res) => {
   const path = req.path || "/";
-  const action = req.query.action;
+  const action = req.body.action;
 
   console.log("Received request:", {
     path,
