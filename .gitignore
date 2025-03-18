@@ -1,12 +1,6 @@
 # Node.js dependencies
 node_modules/
 
-# Build files
-dist/
-build/
-
-# Environment variables (important for security)
-.env
 
 # Logs
 *.log
