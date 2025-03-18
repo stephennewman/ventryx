@@ -22,7 +22,9 @@ app.use((req, res, next) => {
   res.set({
     "Access-Control-Allow-Origin": "https://ventryx.netlify.app",
     "Access-Control-Allow-Methods": "GET, POST, OPTIONS, PUT, PATCH, DELETE",
-    "Access-Control-Allow-Headers": "X-Requested-With, Content-Type, Authorization, PLAID-CLIENT-ID, PLAID-SECRET",
+    "Access-Control-Allow-Headers":
+      "X-Requested-With, Content-Type, Authorization, " +
+      "PLAID-CLIENT-ID, PLAID-SECRET",
     "Access-Control-Allow-Credentials": "true",
     "Access-Control-Max-Age": "86400",
   });
@@ -36,8 +38,10 @@ app.use((req, res, next) => {
 
 app.use(express.json());
 
-const plaidConfig = new Configuration({
-  basePath: PlaidEnvironments.sandbox,
+const configuration = new Configuration({
+  basePath: PlaidEnvironments[
+      process.env.PLAID_ENV || "sandbox"
+  ],
   baseOptions: {
     headers: {
       "PLAID-CLIENT-ID": process.env.PLAID_CLIENT_ID,
@@ -46,7 +50,7 @@ const plaidConfig = new Configuration({
   },
 });
 
-const plaidClient = new PlaidApi(plaidConfig);
+const client = new PlaidApi(configuration);
 
 app.get("/health", (req, res) => {
   res.json({status: "ok"});
@@ -65,7 +69,7 @@ app.post("/create-link-token", async (req, res) => {
       language: "en",
     };
 
-    const response = await plaidClient.linkTokenCreate(request);
+    const response = await client.linkTokenCreate(request);
     console.log("Link token created successfully");
     res.json({linkToken: response.data.link_token});
   } catch (err) {
@@ -79,7 +83,7 @@ app.post("/exchange-token", async (req, res) => {
     const {publicToken} = req.body;
     console.log("Exchanging public token");
 
-    const response = await plaidClient.itemPublicTokenExchange({
+    const response = await client.itemPublicTokenExchange({
       public_token: publicToken,
     });
 
@@ -100,13 +104,13 @@ app.post("/transactions", async (req, res) => {
     const oneYearAgo = new Date();
     oneYearAgo.setFullYear(now.getFullYear() - 1);
 
-    const response = await plaidClient.transactionsGet({
+    const response = await client.transactionsGet({
       access_token: accessToken,
       start_date: oneYearAgo.toISOString().split("T")[0],
       end_date: now.toISOString().split("T")[0],
     });
 
-    const accountsResponse = await plaidClient.accountsGet({
+    const accountsResponse = await client.accountsGet({
       access_token: accessToken,
     });
 
@@ -121,7 +125,23 @@ app.post("/transactions", async (req, res) => {
   }
 });
 
-exports.api = onRequest({
-  memory: "256MiB",
-  region: ["us-central1"],
-}, app);
+exports.api = onRequest(
+    {
+      memory: "256MiB",
+      region: "us-central1",
+      invoker: "public",
+      cors: {
+        origin: true,
+        methods: ["GET", "POST", "OPTIONS"],
+        allowHeaders: [
+          "Content-Type",
+          "Authorization",
+          "X-Requested-With",
+          "Accept",
+          "Origin",
+        ],
+        maxAge: 86400,
+      },
+    },
+    app,
+);
