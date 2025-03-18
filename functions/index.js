@@ -18,7 +18,13 @@ const app = express();
 app.use(cors({
   origin: true,
   methods: ["GET", "POST", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept", "Origin"],
+  allowedHeaders: [
+    "Content-Type",
+    "Authorization",
+    "X-Requested-With",
+    "Accept",
+    "Origin",
+  ],
   credentials: true,
   maxAge: 86400,
 }));
@@ -71,16 +77,16 @@ app.post("/api", async (req, res) => {
 
   if (action === "create-link-token") {
     try {
-      const {userId} = req.body;
-      if (!userId) {
-        console.error("No userId provided in request body");
-        return res.status(400).json({error: "No userId provided"});
+      const {user_id} = req.body;
+      if (!user_id) {
+        console.error("No user_id provided in request body");
+        return res.status(400).json({error: "No user_id provided"});
       }
 
-      console.log("Creating link token for user:", userId);
+      console.log("Creating link token for user:", user_id);
 
       const request = {
-        user: {client_user_id: userId},
+        user: {client_user_id: user_id},
         client_name: "Ventryx",
         products: ["transactions"],
         country_codes: ["US"],
@@ -96,7 +102,7 @@ app.post("/api", async (req, res) => {
       console.error("Error creating link token:", err);
       res.status(500).json({
         error: err.message,
-        details: err.response?.data || {},
+        details: err.response ? err.response.data : {},
       });
     }
   } else if (action === "exchange-token") {
@@ -119,7 +125,7 @@ app.post("/api", async (req, res) => {
       console.error("Error exchanging token:", err);
       res.status(500).json({
         error: err.message,
-        details: err.response?.data || {},
+        details: err.response ? err.response.data : {},
       });
     }
   } else if (action === "transactions") {
@@ -155,7 +161,7 @@ app.post("/api", async (req, res) => {
       console.error("Error fetching transactions:", err);
       res.status(500).json({
         error: err.message,
-        details: err.response?.data || {},
+        details: err.response ? err.response.data : {},
       });
     }
   } else {
