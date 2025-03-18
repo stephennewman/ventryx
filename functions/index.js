@@ -25,6 +25,16 @@ app.use(cors({
 
 app.use(express.json());
 
+// Add request logging middleware
+app.use((req, res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`, {
+    query: req.query,
+    body: req.body,
+    headers: req.headers,
+  });
+  next();
+});
+
 const configuration = new Configuration({
   basePath: PlaidEnvironments[
       process.env.PLAID_ENV || "sandbox"
@@ -47,29 +57,56 @@ app.post("/", async (req, res) => {
   const path = req.path || "/";
   const action = req.query.action;
 
+  console.log("Received request:", {
+    path,
+    action,
+    body: req.body,
+    headers: req.headers,
+  });
+
+  if (!action) {
+    console.error("No action specified in request");
+    return res.status(400).json({error: "No action specified"});
+  }
+
   if (action === "create-link-token") {
     try {
       const {userId} = req.body;
+      if (!userId) {
+        console.error("No userId provided in request body");
+        return res.status(400).json({error: "No userId provided"});
+      }
+
       console.log("Creating link token for user:", userId);
 
       const request = {
-        user: {clientUserId: userId},
-        clientName: "Ventryx",
+        user: {client_user_id: userId},
+        client_name: "Ventryx",
         products: ["transactions"],
-        countryCodes: ["US"],
+        country_codes: ["US"],
         language: "en",
       };
 
+      console.log("Link token request:", request);
+
       const response = await client.linkTokenCreate(request);
-      console.log("Link token created successfully");
+      console.log("Link token created successfully:", response.data);
       res.json({linkToken: response.data.link_token});
     } catch (err) {
       console.error("Error creating link token:", err);
-      res.status(500).json({error: err.message});
+      res.status(500).json({
+        error: err.message,
+        details: err.response?.data || {},
+      });
     }
   } else if (action === "exchange-token") {
     try {
       const {publicToken} = req.body;
+      if (!publicToken) {
+        console.error("No publicToken provided in request body");
+        return res.status(400).json({error: "No publicToken provided"});
+      }
+
       console.log("Exchanging public token");
 
       const response = await client.itemPublicTokenExchange({
@@ -80,11 +117,19 @@ app.post("/", async (req, res) => {
       res.json({accessToken: response.data.access_token});
     } catch (err) {
       console.error("Error exchanging token:", err);
-      res.status(500).json({error: err.message});
+      res.status(500).json({
+        error: err.message,
+        details: err.response?.data || {},
+      });
     }
   } else if (action === "transactions") {
     try {
       const {accessToken} = req.body;
+      if (!accessToken) {
+        console.error("No accessToken provided in request body");
+        return res.status(400).json({error: "No accessToken provided"});
+      }
+
       console.log("Fetching transactions");
 
       const now = new Date();
@@ -108,9 +153,13 @@ app.post("/", async (req, res) => {
       });
     } catch (err) {
       console.error("Error fetching transactions:", err);
-      res.status(500).json({error: err.message});
+      res.status(500).json({
+        error: err.message,
+        details: err.response?.data || {},
+      });
     }
   } else {
+    console.error("Invalid action:", action);
     res.status(404).json({error: "Invalid action"});
   }
 });

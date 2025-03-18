@@ -40,21 +40,25 @@ const App: React.FC = () => {
         setError(null);
         console.log('Creating link token for user:', user.uid);
         
-        const response = await fetch(`${API_URL}?action=create-link-token`, {
+        const response = await fetch(`${API_URL}`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ userId: user.uid }),
+          body: JSON.stringify({ 
+            action: 'create-link-token',
+            user_id: user.uid 
+          }),
         });
 
         if (!response.ok) {
-          throw new Error('Failed to create link token');
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to create link token');
         }
 
         const data = await response.json();
-        console.log('Link token created successfully');
-        setLinkToken(data.linkToken);
+        console.log('Link token created successfully:', data);
+        setLinkToken(data.link_token);
       } catch (err) {
         console.error('Error creating link token:', err);
         setError(err instanceof Error ? err.message : 'Failed to create link token');
@@ -71,20 +75,24 @@ const App: React.FC = () => {
   const fetchTransactions = async (token: string) => {
     try {
       console.log('Fetching transactions from backend');
-      const response = await fetch(`${API_URL}?action=transactions`, {
+      const response = await fetch(`${API_URL}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ access_token: token }),
+        body: JSON.stringify({ 
+          action: 'transactions',
+          access_token: token 
+        }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to fetch transactions');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to fetch transactions');
       }
 
       const data = await response.json();
-      console.log('Successfully fetched transactions');
+      console.log('Successfully fetched transactions:', data);
       setTransactions(data.transactions);
       setAccounts(data.accounts);
     } catch (err) {
@@ -99,21 +107,25 @@ const App: React.FC = () => {
       setError(null);
       console.log('Exchanging public token');
       
-      const response = await fetch(`${API_URL}?action=exchange-token`, {
+      const response = await fetch(`${API_URL}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ public_token: publicToken }),
+        body: JSON.stringify({ 
+          action: 'exchange-token',
+          public_token: publicToken 
+        }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to exchange token');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to exchange token');
       }
 
       const data = await response.json();
-      console.log('Successfully exchanged token');
-      await fetchTransactions(data.accessToken);
+      console.log('Successfully exchanged token:', data);
+      await fetchTransactions(data.access_token);
     } catch (err) {
       console.error('Error exchanging token:', err);
       setError(err instanceof Error ? err.message : 'Failed to exchange token');
