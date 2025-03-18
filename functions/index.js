@@ -42,15 +42,21 @@ app.use((req, res, next) => {
 });
 
 const configuration = new Configuration({
-  basePath: PlaidEnvironments[
-      process.env.PLAID_ENV || "sandbox"
-  ],
+  basePath: PlaidEnvironments["sandbox"],
   baseOptions: {
     headers: {
-      "PLAID-CLIENT-ID": process.env.PLAID_CLIENT_ID,
-      "PLAID-SECRET": process.env.PLAID_SECRET,
+      "PLAID-CLIENT-ID": "67cc77c4a291e80023d19b3c",
+      "PLAID-SECRET": "6b44b731a9bc537a36befba5fcbe77",
+      "Content-Type": "application/json",
     },
   },
+});
+
+// Add debug logging
+console.log("Plaid configuration:", {
+  clientId: configuration.baseOptions.headers["PLAID-CLIENT-ID"],
+  secret: configuration.baseOptions.headers["PLAID-SECRET"],
+  environment: "sandbox",
 });
 
 const client = new PlaidApi(configuration);
@@ -97,7 +103,7 @@ app.post("/api", async (req, res) => {
 
       const response = await client.linkTokenCreate(request);
       console.log("Link token created successfully:", response.data);
-      res.json({linkToken: response.data.link_token});
+      res.json({link_token: response.data.link_token});
     } catch (err) {
       console.error("Error creating link token:", err);
       res.status(500).json({
