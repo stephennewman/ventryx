@@ -40,15 +40,12 @@ const App: React.FC = () => {
         setError(null);
         console.log('Creating link token for user:', user.uid);
         
-        const response = await fetch(`${API_URL}/api`, {
+        const response = await fetch(`${API_URL}/api?action=create-link-token`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ 
-            action: 'create-link-token',
-            userId: user.uid 
-          }),
+          body: JSON.stringify({ userId: user.uid }),
         });
 
         if (!response.ok) {
@@ -74,15 +71,12 @@ const App: React.FC = () => {
   const fetchTransactions = async (token: string) => {
     try {
       console.log('Fetching transactions from backend');
-      const response = await fetch(`${API_URL}/api`, {
+      const response = await fetch(`${API_URL}/api?action=transactions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ 
-          action: 'transactions',
-          access_token: token 
-        }),
+        body: JSON.stringify({ access_token: token }),
       });
 
       if (!response.ok) {
@@ -105,15 +99,12 @@ const App: React.FC = () => {
       setError(null);
       console.log('Exchanging public token');
       
-      const response = await fetch(`${API_URL}/api`, {
+      const response = await fetch(`${API_URL}/api?action=exchange-token`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ 
-          action: 'exchange-token',
-          public_token: publicToken 
-        }),
+        body: JSON.stringify({ public_token: publicToken }),
       });
 
       if (!response.ok) {
