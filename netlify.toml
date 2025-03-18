@@ -3,3 +3,6 @@
   publish = "frontend/dist"
   command = "npm run build"
 
+[context.production.environment]
+  NODE_VERSION = "20.5.0"  # Replace with your local Node.js version
+
