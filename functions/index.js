@@ -77,16 +77,16 @@ app.post("/api", async (req, res) => {
 
   if (action === "create-link-token") {
     try {
-      const {user_id} = req.body;
-      if (!user_id) {
+      const userId = req.body.user_id;
+      if (!userId) {
         console.error("No user_id provided in request body");
         return res.status(400).json({error: "No user_id provided"});
       }
 
-      console.log("Creating link token for user:", user_id);
+      console.log("Creating link token for user:", userId);
 
       const request = {
-        user: {client_user_id: user_id},
+        user: {client_user_id: userId},
         client_name: "Ventryx",
         products: ["transactions"],
         country_codes: ["US"],
