@@ -4,7 +4,7 @@ import react from '@vitejs/plugin-react';
 export default defineConfig({
   plugins: [react()],
   build: {
-    outDir: 'dist', // Ensure this points to the correct folder for build output
+    outDir: 'dist',
     rollupOptions: {
       input: {
         main: './index.html'
@@ -13,6 +13,6 @@ export default defineConfig({
     copyPublicDir: true
   },
   server: {
-    port: 5173,  // Ensure this port works locally
+    port: 5173,
   },
-});
+}); 
