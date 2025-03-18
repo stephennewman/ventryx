@@ -14,27 +14,14 @@ const {Configuration, PlaidApi, PlaidEnvironments} = require("plaid");
 
 const app = express();
 
-// Enable CORS with default options first
-app.use(cors());
-
-// Then add specific headers for all responses
-app.use((req, res, next) => {
-  res.set({
-    "Access-Control-Allow-Origin": "https://ventryx.netlify.app",
-    "Access-Control-Allow-Methods": "GET, POST, OPTIONS, PUT, PATCH, DELETE",
-    "Access-Control-Allow-Headers":
-      "X-Requested-With, Content-Type, Authorization, " +
-      "PLAID-CLIENT-ID, PLAID-SECRET",
-    "Access-Control-Allow-Credentials": "true",
-    "Access-Control-Max-Age": "86400",
-  });
-
-  // Handle preflight requests
-  if (req.method === "OPTIONS") {
-    return res.status(204).end();
-  }
-  next();
-});
+// Enable CORS with more permissive options
+app.use(cors({
+  origin: true,
+  methods: ["GET", "POST", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept", "Origin"],
+  credentials: true,
+  maxAge: 86400,
+}));
 
 app.use(express.json());
 

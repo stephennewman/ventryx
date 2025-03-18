@@ -40,7 +40,7 @@ const App: React.FC = () => {
         setError(null);
         console.log('Creating link token for user:', user.uid);
         
-        const response = await fetch(`${API_URL}/api?action=create-link-token`, {
+        const response = await fetch(`${API_URL}?action=create-link-token`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -71,7 +71,7 @@ const App: React.FC = () => {
   const fetchTransactions = async (token: string) => {
     try {
       console.log('Fetching transactions from backend');
-      const response = await fetch(`${API_URL}/api?action=transactions`, {
+      const response = await fetch(`${API_URL}?action=transactions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -99,7 +99,7 @@ const App: React.FC = () => {
       setError(null);
       console.log('Exchanging public token');
       
-      const response = await fetch(`${API_URL}/api?action=exchange-token`, {
+      const response = await fetch(`${API_URL}?action=exchange-token`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
