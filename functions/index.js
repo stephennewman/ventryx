@@ -132,19 +132,22 @@ app.post("/api", async (req, res) => {
       });
     }
   } else if (action === "exchange-token") {
+    console.log("Received exchange-token request");
+    console.log("Request body:", req.body);
+    const { publicToken, userId } = req.body;
+    console.log("Public token:", publicToken);
+    console.log("User ID:", userId);
+
+    if (!publicToken || !userId) {
+      console.error("Missing required fields");
+      return res.status(400).json({
+        error: "Missing required fields",
+        details: !publicToken ? "No public token provided" : "No user ID provided",
+      });
+    }
+
     try {
-      const {publicToken, userId} = req.body;
-      if (!publicToken) {
-        console.error("No publicToken provided in request body");
-        return res.status(400).json({error: "No publicToken provided"});
-      }
-      if (!userId) {
-        console.error("No userId provided in request body");
-        return res.status(400).json({error: "No userId provided"});
-      }
-
-      console.log("Exchanging public token");
-
+      console.log("Exchanging public token for access token...");
       const response = await client.itemPublicTokenExchange({
         public_token: publicToken,
       });
