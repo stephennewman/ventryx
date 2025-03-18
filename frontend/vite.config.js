@@ -5,5 +5,11 @@ export default defineConfig({
   plugins: [react()],
   optimizeDeps: {
     include: ["react", "react-dom"]
-  }
+  },
+  build: {
+    outDir: "dist", // Define where the build output should go (for example, `frontend/dist`)
+  },
+  server: {
+    port: 5173, // Ensure Vite runs on port 5173 or the port of your choice
+  },
 });
