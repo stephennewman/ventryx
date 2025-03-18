@@ -1,15 +1,15 @@
-import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react";
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
 
 export default defineConfig({
   plugins: [react()],
-  optimizeDeps: {
-    include: ["react", "react-dom"]
-  },
   build: {
-    outDir: "frontend/dist", // Define where the build output should go (for example, `frontend/dist`)
+    outDir: 'dist', // Ensure this points to the correct folder for build output
+    rollupOptions: {
+      input: './src/main.jsx' // Ensure this points to the correct entry point for React
+    }
   },
   server: {
-    port: 5173, // Ensure Vite runs on port 5173 or the port of your choice
+    port: 5173,  // Ensure this port works locally
   },
 });
