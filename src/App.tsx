@@ -80,7 +80,9 @@ const App: React.FC = () => {
     }
   }, [user]);
 
-  const fetchTransactions = async (token: string) => {
+  const fetchTransactions = async () => {
+    if (!user) return;
+
     try {
       console.log('Fetching transactions from backend');
       const response = await fetch(`${API_URL}`, {
@@ -90,7 +92,7 @@ const App: React.FC = () => {
         },
         body: JSON.stringify({ 
           action: 'transactions',
-          access_token: token 
+          userId: user.uid
         }),
       });
 
@@ -116,6 +118,10 @@ const App: React.FC = () => {
 
   const handlePlaidSuccess = async (publicToken: string) => {
     try {
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+
       setIsLoading(true);
       setError(null);
       console.log('Exchanging public token');
@@ -127,7 +133,8 @@ const App: React.FC = () => {
         },
         body: JSON.stringify({ 
           action: 'exchange-token',
-          public_token: publicToken 
+          public_token: publicToken,
+          userId: user.uid
         }),
       });
 
@@ -143,7 +150,9 @@ const App: React.FC = () => {
 
       const data = await response.json();
       console.log('Successfully exchanged token:', data);
-      await fetchTransactions(data.access_token);
+      
+      // Fetch initial transactions
+      await fetchTransactions();
     } catch (err) {
       console.error('Error exchanging token:', err);
       setError(err instanceof Error ? err.message : 'Failed to exchange token');

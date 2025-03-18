@@ -11,12 +11,20 @@ const {onRequest} = require("firebase-functions/v2/https");
 const express = require("express");
 const cors = require("cors");
 const {Configuration, PlaidApi, PlaidEnvironments} = require("plaid");
+const {initializeApp} = require("firebase-admin/app");
+const {getFirestore} = require("firebase-admin/firestore");
+
+// Initialize Firebase Admin
+initializeApp();
+
+// Initialize Firestore
+const db = getFirestore();
 
 const app = express();
 
 // Enable CORS with more permissive options
 app.use(cors({
-  origin: true,
+  origin: ["https://ventryx.netlify.app", "http://localhost:5176"],
   methods: ["GET", "POST", "OPTIONS"],
   allowedHeaders: [
     "Content-Type",
@@ -28,6 +36,18 @@ app.use(cors({
   credentials: true,
   maxAge: 86400,
 }));
+
+// Add CORS headers middleware
+app.use((req, res, next) => {
+  res.header("Access-Control-Allow-Origin", "https://ventryx.netlify.app");
+  res.header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  res.header(
+      "Access-Control-Allow-Headers",
+      "Content-Type, Authorization, X-Requested-With, Accept, Origin",
+  );
+  res.header("Access-Control-Allow-Credentials", "true");
+  next();
+});
 
 app.use(express.json());
 
@@ -113,10 +133,14 @@ app.post("/api", async (req, res) => {
     }
   } else if (action === "exchange-token") {
     try {
-      const {publicToken} = req.body;
+      const {publicToken, userId} = req.body;
       if (!publicToken) {
         console.error("No publicToken provided in request body");
         return res.status(400).json({error: "No publicToken provided"});
+      }
+      if (!userId) {
+        console.error("No userId provided in request body");
+        return res.status(400).json({error: "No userId provided"});
       }
 
       console.log("Exchanging public token");
@@ -125,8 +149,19 @@ app.post("/api", async (req, res) => {
         public_token: publicToken,
       });
 
-      console.log("Successfully exchanged token");
-      res.json({accessToken: response.data.access_token});
+      const accessToken = response.data.access_token;
+      const itemId = response.data.item_id;
+
+      // Store the access token in Firestore
+      await db.collection("plaid_items").doc(userId).set({
+        access_token: accessToken,
+        item_id: itemId,
+        created_at: new Date(),
+        updated_at: new Date(),
+      });
+
+      console.log("Successfully exchanged token and stored in Firestore");
+      res.json({success: true});
     } catch (err) {
       console.error("Error exchanging token:", err);
       res.status(500).json({
@@ -136,12 +171,20 @@ app.post("/api", async (req, res) => {
     }
   } else if (action === "transactions") {
     try {
-      const {accessToken} = req.body;
-      if (!accessToken) {
-        console.error("No accessToken provided in request body");
-        return res.status(400).json({error: "No accessToken provided"});
+      const {userId} = req.body;
+      if (!userId) {
+        console.error("No userId provided in request body");
+        return res.status(400).json({error: "No userId provided"});
       }
 
+      console.log("Fetching access token from Firestore for user:", userId);
+      const plaidItemDoc = await db.collection("plaid_items").doc(userId).get();
+      if (!plaidItemDoc.exists) {
+        console.error("No Plaid item found for user:", userId);
+        return res.status(404).json({error: "No linked bank account found"});
+      }
+
+      const accessToken = plaidItemDoc.data().access_token;
       console.log("Fetching transactions");
 
       const now = new Date();
