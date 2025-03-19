@@ -185,24 +185,72 @@ const App: React.FC = () => {
     <div className="min-h-screen bg-gray-100">
       <div className="max-w-4xl mx-auto p-6">
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">Ventryx finance feed</h1>
-          <p className="text-xl text-gray-600">Your real-time budget analyzer</p>
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">Ventryx</h1>
+          <p className="text-xl text-gray-600">Your real-time money helper</p>
         </div>
 
         {user ? (
           <div className="space-y-6">
             <div className="bg-white rounded-lg shadow p-6">
-              <div className="flex items-center space-x-4 mb-4">
-                {user.photoURL && (
-                  <img
-                    src={user.photoURL}
-                    alt="User Avatar"
-                    className="w-12 h-12 rounded-full"
-                  />
-                )}
-                <div>
-                  <h2 className="text-xl font-semibold">{user.displayName}</h2>
-                  <p className="text-gray-600">{user.email}</p>
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center space-x-4">
+                  {user.photoURL && (
+                    <img
+                      src={user.photoURL}
+                      alt="User Avatar"
+                      className="w-12 h-12 rounded-full"
+                    />
+                  )}
+                  <div className="text-left">
+                    <h2 className="text-xl font-semibold">{user.displayName}</h2>
+                    <p className="text-gray-600">{user.email}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center space-x-4">
+                  <button
+                    onClick={() => logOut()}
+                    className="text-gray-400 hover:text-gray-600 font-medium"
+                  >
+                    Sign Out
+                  </button>
+
+                  {isLoading ? (
+                    <div className="flex justify-center">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                    </div>
+                  ) : accounts.length > 0 ? (
+                    <button
+                      onClick={() => {
+                        if (linkToken && ready) {
+                          open();
+                        }
+                      }}
+                      disabled={!ready || !linkToken}
+                      className="bg-green-600 text-white font-semibold px-6 py-3 rounded-lg shadow hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <div className="flex items-center justify-center space-x-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                        </svg>
+                        <span>Connected • Add Another Account</span>
+                      </div>
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        if (linkToken && ready) {
+                          open();
+                        }
+                      }}
+                      disabled={!ready || !linkToken}
+                      className={`bg-blue-600 text-white font-semibold px-6 py-3 rounded-lg shadow hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 ${
+                        (!ready || !linkToken) ? 'opacity-50 cursor-not-allowed' : ''
+                      }`}
+                    >
+                      {!linkToken ? 'Loading...' : 'Connect Your Bank Account'}
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -212,57 +260,24 @@ const App: React.FC = () => {
                 </div>
               )}
 
-              {isLoading ? (
-                <div className="flex justify-center py-4">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-                </div>
-              ) : accounts.length > 0 ? (
-                <div className="flex space-x-4">
-                  <button
-                    onClick={() => {
-                      if (linkToken && ready) {
-                        open();
-                      }
-                    }}
-                    disabled={!ready || !linkToken}
-                    className="flex-1 bg-green-600 text-white font-semibold px-6 py-3 rounded-lg shadow hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <div className="flex items-center justify-center space-x-2">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                      </svg>
-                      <span>Connected • Add Another Account</span>
-                    </div>
-                  </button>
-                </div>
-              ) : (
-                <button
-                  onClick={() => {
-                    if (linkToken && ready) {
-                      open();
-                    }
-                  }}
-                  disabled={!ready || !linkToken}
-                  className={`w-full bg-blue-600 text-white font-semibold px-6 py-3 rounded-lg shadow hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 ${
-                    (!ready || !linkToken) ? 'opacity-50 cursor-not-allowed' : ''
-                  }`}
-                >
-                  {!linkToken ? 'Loading...' : 'Connect Your Bank Account'}
-                </button>
-              )}
-
-              <div className="space-y-8">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-8 mt-8">
+                <div className="grid grid-cols-1 gap-4">
                   {accounts.map(account => (
-                    <div key={account.account_id} className="bg-white p-4 rounded-lg shadow-md">
-                      <h3 className="text-lg font-semibold text-gray-800">{account.name}</h3>
-                      <p className="text-sm text-gray-600">{account.type}</p>
-                      <p className="text-xl font-bold text-gray-900 mt-2">
-                        ${account.balances.current?.toFixed(2) || '0.00'}
-                      </p>
-                      <p className="text-sm text-gray-600">
-                        Available: ${account.balances.available?.toFixed(2) || '0.00'}
-                      </p>
+                    <div key={account.account_id} className="bg-blue-50 p-4 rounded-lg shadow-md">
+                      <div className="flex justify-between items-start">
+                        <div className="text-left">
+                          <h3 className="text-lg font-semibold text-gray-800">{account.name}</h3>
+                          <p className="text-sm text-gray-600">{account.type}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-xl font-bold text-gray-900">
+                            ${account.balances.current?.toFixed(2) || '0.00'}
+                          </p>
+                          <p className="text-sm text-gray-600">
+                            Available: ${account.balances.available?.toFixed(2) || '0.00'}
+                          </p>
+                        </div>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -271,13 +286,6 @@ const App: React.FC = () => {
                   <TransactionFeed transactions={transactions} />
                 </div>
               </div>
-
-              <button
-                onClick={() => logOut()}
-                className="mt-4 text-gray-600 hover:text-gray-900"
-              >
-                Sign Out
-              </button>
             </div>
           </div>
         ) : (
