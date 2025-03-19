@@ -142,7 +142,9 @@ app.post("/api", async (req, res) => {
       console.error("Missing required fields");
       return res.status(400).json({
         error: "Missing required fields",
-        details: !publicToken ? "No public token provided" : "No user ID provided",
+        details: !publicToken ?
+          "No public token provided" :
+          "No user ID provided",
       });
     }
 
