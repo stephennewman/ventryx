@@ -283,7 +283,7 @@ const App: React.FC = () => {
                 </div>
                 {accounts.length > 0 && (
                   <div className="mt-8">
-                    <h3 className="text-xl font-semibold mb-4">Recent Transactions</h3>
+                    {/* <h3 className="text-xl font-semibold mb-4 text-left">Recent Transactions</h3> */}
                     <TransactionFeed transactions={transactions} />
                   </div>
                 )}
