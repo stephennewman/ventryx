@@ -1,17 +1,32 @@
 import React from 'react';
 import { Transaction } from '../plaid';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
+import { FaCalendarAlt } from 'react-icons/fa';
 
 interface TransactionFeedProps {
   transactions: Transaction[];
+  selectedAccountId: string | null;
 }
 
-const TransactionFeed: React.FC<TransactionFeedProps> = ({ transactions }) => {
+// Custom input component for the date picker
+const CustomDateInput = React.forwardRef<HTMLButtonElement, React.ComponentProps<'button'>>(({ value, onClick }, ref) => (
+  <button className="p-2 border rounded flex items-center" onClick={onClick} ref={ref}>
+    <FaCalendarAlt className="mr-2" />
+    {value || "Select date range"}
+  </button>
+));
+
+const TransactionFeed: React.FC<TransactionFeedProps> = ({ transactions, selectedAccountId }) => {
   const [selectedCategory, setSelectedCategory] = React.useState<string | null>(null);
   const [selectedVendor, setSelectedVendor] = React.useState<string | null>(null);
   const [totalAmount, setTotalAmount] = React.useState<number>(0);
   const [transactionCount, setTransactionCount] = React.useState<number>(0);
   const [averageAmount, setAverageAmount] = React.useState<number>(0);
   const [daysWorth, setDaysWorth] = React.useState<number>(0);
+  const [searchQuery, setSearchQuery] = React.useState('');
+  const [dateRange, setDateRange] = React.useState<[Date | null, Date | null]>([null, null]);
+  const [startDate, endDate] = dateRange;
   const maxTransactionAmount = Math.max(...transactions.map(transaction => Math.abs(transaction.amount)));
   const totalWithdrawals = transactions.reduce((sum, transaction) => transaction.amount > 0 ? sum + transaction.amount : sum, 0);
 
@@ -24,9 +39,14 @@ const TransactionFeed: React.FC<TransactionFeedProps> = ({ transactions }) => {
   };
 
   const filteredTransactions = transactions.filter(transaction => {
+    const transactionDate = new Date(transaction.date);
+    const isWithinDateRange = (!startDate || transactionDate >= startDate) &&
+                              (!endDate || transactionDate <= endDate);
+    const matchesSearch = (transaction.merchant_name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          transaction.name.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory = selectedCategory === '$' ? transaction.amount < 0 : selectedCategory === '-$' ? transaction.amount > 0 : selectedCategory ? transaction.category.includes(selectedCategory) : true;
     const matchesVendor = selectedVendor ? (transaction.merchant_name || transaction.name) === selectedVendor : true;
-    return matchesCategory && matchesVendor;
+    return matchesSearch && matchesCategory && matchesVendor && isWithinDateRange;
   });
 
   const maxFilteredTransactionAmount = Math.max(...filteredTransactions.map(transaction => Math.abs(transaction.amount)));
@@ -60,8 +80,38 @@ const TransactionFeed: React.FC<TransactionFeedProps> = ({ transactions }) => {
 
   const lastXDays = filteredTransactions.length > 0 ? Math.ceil((new Date().getTime() - new Date(Math.min(...filteredTransactions.map(transaction => new Date(transaction.date).getTime()))).getTime()) / (1000 * 3600 * 24)) : 0;
 
+  console.log('TransactionFeed - transactions prop:', transactions);
+  console.log('TransactionFeed - filteredTransactions:', filteredTransactions);
+
   return (
     <div className="space-y-4">
+      <div className="flex items-center space-x-4 mb-4">
+        <input
+          type="text"
+          placeholder="Search transactions..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="p-2 border rounded flex-1"
+        />
+        {selectedCategory || selectedVendor || selectedAccountId ? (
+          <div className="p-2 border rounded">
+            <button
+              onClick={clearFilters}
+              className="text-blue-500 hover:underline focus:outline-none"
+            >
+              Clear Filters
+            </button>
+          </div>
+        ) : null}
+        <DatePicker
+          selectsRange={true}
+          startDate={startDate}
+          endDate={endDate}
+          onChange={(update) => setDateRange(update)}
+          isClearable={true}
+          customInput={<CustomDateInput />}
+        />
+      </div>
       <div className="p-4 rounded-lg shadow-md flex justify-between items-start bg-blue-50">
         <div className="text-left">
           {withdrawalCount > 0 && (
@@ -89,16 +139,6 @@ const TransactionFeed: React.FC<TransactionFeedProps> = ({ transactions }) => {
           )}
         </div>
       </div>
-      {selectedCategory || selectedVendor ? (
-        <div className="flex justify-end mb-4">
-          <button
-            onClick={clearFilters}
-            className="text-blue-500 hover:underline focus:outline-none"
-          >
-            Clear Filters
-          </button>
-        </div>
-      ) : null}
       {filteredTransactions.map((transaction) => (
         <div
           key={transaction.transaction_id}
@@ -152,7 +192,8 @@ const TransactionFeed: React.FC<TransactionFeedProps> = ({ transactions }) => {
               <p className="text-sm text-gray-600 mb-1">
                 {new Date(transaction.date).toLocaleDateString()}
               </p>
-              <p className={`text-lg font-semibold ${transaction.amount < 0 ? 'text-green-600' : 'text-red-600'}`}>
+              <p className={`text-lg font-semibold ${transaction.amount < 0 ? 'text-green-600' : 'text-red-600'}`}
+              >
                 ${Math.abs(transaction.amount).toFixed(2)}
               </p>
               {transaction.pending && (
@@ -166,4 +207,4 @@ const TransactionFeed: React.FC<TransactionFeedProps> = ({ transactions }) => {
   );
 };
 
-export default TransactionFeed; 
+export default TransactionFeed;

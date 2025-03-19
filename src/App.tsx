@@ -21,6 +21,7 @@ const App: React.FC = () => {
   const [linkToken, setLinkToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -181,9 +182,13 @@ const App: React.FC = () => {
     env: 'sandbox'
   });
 
+  const clearFilters = () => {
+    setSelectedAccountId(null);
+  };
+
   return (
     <div className="min-h-screen bg-gray-100">
-      <div className="max-w-4xl mx-auto p-6">
+      <div className="max-w-6xl mx-auto p-6">
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-gray-900 mb-2">Ventryx</h1>
           <p className="text-xl text-gray-600">Your real-time money helper</p>
@@ -260,33 +265,50 @@ const App: React.FC = () => {
                 </div>
               )}
 
-              <div className="space-y-8 mt-8">
-                <div className="grid grid-cols-1 gap-4">
-                  {accounts.map(account => (
-                    <div key={account.account_id} className="bg-blue-50 p-4 rounded-lg shadow-md">
-                      <div className="flex justify-between items-start">
-                        <div className="text-left">
-                          <h3 className="text-lg font-semibold text-gray-800">{account.name}</h3>
-                          <p className="text-sm text-gray-600">{account.type}</p>
+              <div className="flex space-x-6">
+                <div className="w-1/3">
+                  <div className="space-y-8 mt-8">
+                    <div className="grid grid-cols-1 gap-4">
+                      {accounts.map(account => (
+                        <div key={account.account_id} className="bg-blue-50 p-4 rounded-lg shadow-md cursor-pointer" onClick={() => { 
+                          console.log('Account clicked:', account.account_id);
+                          setSelectedAccountId(account.account_id); 
+                          clearFilters(); 
+                        }}>
+                          <div className="flex justify-between items-start">
+                            <div className="text-left">
+                              <h3 className="text-lg font-semibold text-gray-800">{account.name}</h3>
+                              <p className="text-sm text-gray-600">{account.type}</p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-xl font-bold text-gray-900">
+                                ${account.balances.current?.toFixed(2) || '0.00'}
+                              </p>
+                              <p className="text-sm text-gray-600">
+                                Available: ${account.balances.available?.toFixed(2) || '0.00'}
+                              </p>
+                            </div>
+                          </div>
                         </div>
-                        <div className="text-right">
-                          <p className="text-xl font-bold text-gray-900">
-                            ${account.balances.current?.toFixed(2) || '0.00'}
-                          </p>
-                          <p className="text-sm text-gray-600">
-                            Available: ${account.balances.available?.toFixed(2) || '0.00'}
-                          </p>
-                        </div>
-                      </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-                {accounts.length > 0 && (
-                  <div className="mt-8">
-                    {/* <h3 className="text-xl font-semibold mb-4 text-left">Recent Transactions</h3> */}
-                    <TransactionFeed transactions={transactions} />
                   </div>
-                )}
+                </div>
+                <div className="w-2/3">
+                  {accounts.length > 0 && (
+                    <div className="mt-8">
+                      {/* <h3 className="text-xl font-semibold mb-4 text-left">Recent Transactions</h3> */}
+                      <TransactionFeed 
+                        transactions={transactions.filter(transaction => {
+                          const isMatch = !selectedAccountId || transaction.account_id === selectedAccountId;
+                          console.log('Filtering transaction:', transaction.transaction_id, 'Match:', isMatch);
+                          return isMatch;
+                        })} 
+                        selectedAccountId={selectedAccountId} 
+                      />
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
