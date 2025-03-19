@@ -124,18 +124,21 @@ const App: React.FC = () => {
 
       setIsLoading(true);
       setError(null);
-      console.log('Exchanging public token');
+      console.log('Plaid Link success callback received public token:', publicToken);
+      
+      const requestBody = { 
+        action: 'exchange-token',
+        publicToken: publicToken,
+        userId: user.uid
+      };
+      console.log('Sending request to backend:', requestBody);
       
       const response = await fetch(`${API_URL}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ 
-          action: 'exchange-token',
-          public_token: publicToken,
-          userId: user.uid
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       const contentType = response.headers.get('content-type');

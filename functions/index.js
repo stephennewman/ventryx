@@ -134,7 +134,7 @@ app.post("/api", async (req, res) => {
   } else if (action === "exchange-token") {
     console.log("Received exchange-token request");
     console.log("Request body:", req.body);
-    const { publicToken, userId } = req.body;
+    const {publicToken, userId} = req.body;
     console.log("Public token:", publicToken);
     console.log("User ID:", userId);
 
