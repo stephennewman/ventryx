@@ -14,13 +14,10 @@ const TransactionFeed: React.FC<TransactionFeedProps> = ({ transactions }) => {
           className="bg-white p-4 rounded-lg shadow-md hover:shadow-lg transition-shadow"
         >
           <div className="flex justify-between items-start">
-            <div>
-              <h4 className="text-lg font-semibold text-gray-900">
+            <div className="flex-1 min-w-0 text-left">
+              <h4 className="text-lg font-semibold text-gray-900 truncate text-left">
                 {transaction.merchant_name || transaction.name}
               </h4>
-              <p className="text-sm text-gray-600">
-                {new Date(transaction.date).toLocaleDateString()}
-              </p>
               {transaction.category && (
                 <div className="mt-1 flex flex-wrap gap-2">
                   {transaction.category.map((category, index) => (
@@ -34,13 +31,18 @@ const TransactionFeed: React.FC<TransactionFeedProps> = ({ transactions }) => {
                 </div>
               )}
             </div>
-            <p className={`text-lg font-semibold ${transaction.amount < 0 ? 'text-green-600' : 'text-red-600'}`}>
-              ${Math.abs(transaction.amount).toFixed(2)}
-            </p>
+            <div className="ml-4 flex-shrink-0 text-right">
+              <p className="text-sm text-gray-600 mb-1">
+                {new Date(transaction.date).toLocaleDateString()}
+              </p>
+              <p className={`text-lg font-semibold ${transaction.amount < 0 ? 'text-green-600' : 'text-red-600'}`}>
+                ${Math.abs(transaction.amount).toFixed(2)}
+              </p>
+              {transaction.pending && (
+                <p className="text-sm text-orange-600 mt-1">Pending</p>
+              )}
+            </div>
           </div>
-          {transaction.pending && (
-            <p className="mt-2 text-sm text-orange-600">Pending</p>
-          )}
         </div>
       ))}
     </div>
