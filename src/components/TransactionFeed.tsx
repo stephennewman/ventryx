@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Transaction } from '../plaid';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
-import { FaCalendarAlt } from 'react-icons/fa';
+import { FaCalendarAlt, FaSort } from 'react-icons/fa';
 
 interface TransactionFeedProps {
   transactions: Transaction[];
@@ -10,10 +10,9 @@ interface TransactionFeedProps {
 }
 
 // Custom input component for the date picker
-const CustomDateInput = React.forwardRef<HTMLButtonElement, React.ComponentProps<'button'>>(({ value, onClick }, ref) => (
+const CustomDateInput = React.forwardRef<HTMLButtonElement, React.ComponentProps<'button'>>(({ onClick }, ref) => (
   <button className="p-2 border rounded flex items-center" onClick={onClick} ref={ref}>
     <FaCalendarAlt className="mr-2" />
-    {value || "Select date range"}
   </button>
 ));
 
@@ -29,6 +28,7 @@ const TransactionFeed: React.FC<TransactionFeedProps> = ({ transactions, selecte
   const [startDate, endDate] = dateRange;
   const maxTransactionAmount = Math.max(...transactions.map(transaction => Math.abs(transaction.amount)));
   const totalWithdrawals = transactions.reduce((sum, transaction) => transaction.amount > 0 ? sum + transaction.amount : sum, 0);
+  const [sortOption, setSortOption] = useState<string>('date');
 
   const handleCategoryClick = (category: string) => {
     setSelectedCategory(category === selectedCategory ? null : category);
@@ -38,7 +38,25 @@ const TransactionFeed: React.FC<TransactionFeedProps> = ({ transactions, selecte
     setSelectedVendor(vendor === selectedVendor ? null : vendor);
   };
 
-  const filteredTransactions = transactions.filter(transaction => {
+  const handleSortChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    setSortOption(event.target.value);
+  };
+
+  const sortedTransactions = [...transactions].sort((a, b) => {
+    switch (sortOption) {
+      case 'amount-desc':
+        return b.amount - a.amount;
+      case 'amount-asc':
+        return a.amount - b.amount;
+      case 'date-asc':
+        return new Date(a.date).getTime() - new Date(b.date).getTime();
+      case 'date-desc':
+      default:
+        return new Date(b.date).getTime() - new Date(a.date).getTime();
+    }
+  });
+
+  const filteredTransactions = sortedTransactions.filter(transaction => {
     const transactionDate = new Date(transaction.date);
     const isWithinDateRange = (!startDate || transactionDate >= startDate) &&
                               (!endDate || transactionDate <= endDate);
@@ -72,11 +90,14 @@ const TransactionFeed: React.FC<TransactionFeedProps> = ({ transactions, selecte
     setSelectedVendor(null);
   };
 
-  const totalWithdrawalAmount = filteredTransactions.reduce((sum, transaction) => transaction.amount > 0 ? sum + transaction.amount : sum, 0);
-  const withdrawalCount = filteredTransactions.filter(transaction => transaction.amount > 0).length;
+  const filteredWithdrawals = filteredTransactions.filter(transaction => transaction.amount > 0);
+  const uniqueVendors = new Set(filteredWithdrawals.map(transaction => transaction.merchant_name || transaction.name)).size;
 
-  const totalDepositAmount = filteredTransactions.reduce((sum, transaction) => transaction.amount < 0 ? sum + Math.abs(transaction.amount) : sum, 0);
-  const depositCount = filteredTransactions.filter(transaction => transaction.amount < 0).length;
+  const totalWithdrawalAmount = filteredWithdrawals.reduce((sum, transaction) => sum + transaction.amount, 0);
+  const withdrawalCount = filteredWithdrawals.length;
+
+  const averageWeeklyExpense = daysWorth > 0 ? (totalWithdrawalAmount / daysWorth) * 7 : 0;
+  const averageMonthlyExpense = daysWorth > 0 ? (totalWithdrawalAmount / daysWorth) * 30 : 0;
 
   const lastXDays = filteredTransactions.length > 0 ? Math.ceil((new Date().getTime() - new Date(Math.min(...filteredTransactions.map(transaction => new Date(transaction.date).getTime()))).getTime()) / (1000 * 3600 * 24)) : 0;
 
@@ -85,6 +106,23 @@ const TransactionFeed: React.FC<TransactionFeedProps> = ({ transactions, selecte
 
   return (
     <div className="space-y-4">
+      {withdrawalCount > 0 && (
+        <div className="p-4 rounded-lg shadow-md flex justify-between items-start bg-blue-50">
+          <div className="text-left">
+            {lastXDays > 0 && (
+              <p className="text-sm text-gray-700">Days Analyzed: {lastXDays}</p>
+            )}
+            <p className="text-sm text-gray-700"># of Transactions: {withdrawalCount}</p>
+            <p className="text-sm text-gray-700"># of Unique Vendors: {uniqueVendors}</p>
+            <p className="text-sm text-gray-700">Average Transaction: ${withdrawalCount > 0 ? (totalWithdrawalAmount / withdrawalCount).toFixed(2) : '0.00'}</p>
+            <p className="text-sm text-gray-700">Average Weekly Spend: ${averageWeeklyExpense.toFixed(2)}</p>
+            <p className="text-sm text-gray-700">Average Monthly Spend: ${averageMonthlyExpense.toFixed(2)}</p>
+          </div>
+          <div className="text-right">
+            <h4 className="text-lg font-semibold text-red-800">Total Spend: ${totalWithdrawalAmount.toFixed(2)}</h4>
+          </div>
+        </div>
+      )}
       <div className="flex items-center space-x-4 mb-4">
         <input
           type="text"
@@ -93,16 +131,14 @@ const TransactionFeed: React.FC<TransactionFeedProps> = ({ transactions, selecte
           onChange={(e) => setSearchQuery(e.target.value)}
           className="p-2 border rounded flex-1"
         />
-        {selectedCategory || selectedVendor || selectedAccountId ? (
-          <div className="p-2 border rounded">
-            <button
-              onClick={clearFilters}
-              className="text-blue-500 hover:underline focus:outline-none"
-            >
-              Clear Filters
-            </button>
-          </div>
-        ) : null}
+        <label htmlFor="sort" className="mr-2">Sort by:</label>
+        <select id="sort" value={sortOption} onChange={handleSortChange} className="p-2 border rounded flex items-center">
+          <FaSort className="mr-2" />
+          <option value="date-desc">Date (Newest to Oldest)</option>
+          <option value="date-asc">Date (Oldest to Newest)</option>
+          <option value="amount-desc">Amount (Highest to Lowest)</option>
+          <option value="amount-asc">Amount (Lowest to Highest)</option>
+        </select>
         <DatePicker
           selectsRange={true}
           startDate={startDate}
@@ -110,35 +146,19 @@ const TransactionFeed: React.FC<TransactionFeedProps> = ({ transactions, selecte
           onChange={(update) => setDateRange(update)}
           isClearable={true}
           customInput={<CustomDateInput />}
+          popperClassName="z-50"
         />
       </div>
-      <div className="p-4 rounded-lg shadow-md flex justify-between items-start bg-blue-50">
-        <div className="text-left">
-          {withdrawalCount > 0 && (
-            <>
-              <p className="text-sm text-gray-700">Transactions: {withdrawalCount}</p>
-              <p className="text-sm text-gray-700">Average Transaction: ${withdrawalCount > 0 ? (totalWithdrawalAmount / withdrawalCount).toFixed(2) : '0.00'}</p>
-            </>
-          )}
-          {depositCount > 0 && (
-            <>
-              <p className="text-sm text-gray-700">Deposits: {depositCount}</p>
-              <p className="text-sm text-gray-700">Average Deposit: ${depositCount > 0 ? (totalDepositAmount / depositCount).toFixed(2) : '0.00'}</p>
-            </>
-          )}
-          {lastXDays > 0 && (
-            <p className="text-sm text-gray-700">Last {lastXDays} days</p>
-          )}
+      {selectedCategory || selectedVendor || selectedAccountId ? (
+        <div className="p-2 border rounded mb-4">
+          <button
+            onClick={clearFilters}
+            className="text-blue-500 hover:underline focus:outline-none w-full"
+          >
+            Clear Filters
+          </button>
         </div>
-        <div className="text-right">
-          {withdrawalCount > 0 && (
-            <h4 className="text-lg font-semibold text-red-800">Total Transactions: ${totalWithdrawalAmount.toFixed(2)}</h4>
-          )}
-          {depositCount > 0 && (
-            <h4 className="text-lg font-semibold text-green-800">Total Deposits: ${totalDepositAmount.toFixed(2)}</h4>
-          )}
-        </div>
-      </div>
+      ) : null}
       {filteredTransactions.map((transaction) => (
         <div
           key={transaction.transaction_id}
