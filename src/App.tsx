@@ -4,7 +4,7 @@ import { onAuthStateChanged, User } from 'firebase/auth';
 import { usePlaidLink, PlaidLinkError } from 'react-plaid-link';
 import { plaidClient, Transaction, Account } from './plaid';
 import TransactionFeed from './components/TransactionFeed';
-import { Products, CountryCode } from 'plaid';
+
 
 interface PlaidEvent {
   eventName: string;
@@ -22,6 +22,7 @@ const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null);
+  const [generatedText, setGeneratedText] = useState<string | null>(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -186,12 +187,17 @@ const App: React.FC = () => {
     setSelectedAccountId(null);
   };
 
+  
   return (
     <div className="min-h-screen bg-gray-100">
       <div className="max-w-6xl mx-auto p-6">
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">Ventryx</h1>
-          <p className="text-xl text-gray-600">Your real-time money helper</p>
+          <img
+            src="https://s3.ca-central-1.amazonaws.com/logojoy/logos/215772753/noBgColor.png?19117.199999999255"
+            alt="Logo"
+            className="mx-auto mb-2"
+            style={{ width: '25%', height: 'auto' }}
+          />
         </div>
 
         {user ? (
@@ -272,7 +278,8 @@ const App: React.FC = () => {
                       {accounts.map(account => (
                         <div key={account.account_id} className="bg-blue-50 p-4 rounded-lg shadow-md cursor-pointer" onClick={() => { 
                           console.log('Account clicked:', account.account_id);
-                          setSelectedAccountId(account.account_id); 
+                          setSelectedAccountId(account.account_id);
+                          console.log('Selected Account ID set to:', account.account_id);
                           clearFilters(); 
                         }}>
                           <div className="flex justify-between items-start">
@@ -299,11 +306,7 @@ const App: React.FC = () => {
                     <div className="mt-8">
                       {/* <h3 className="text-xl font-semibold mb-4 text-left">Recent Transactions</h3> */}
                       <TransactionFeed 
-                        transactions={transactions.filter(transaction => {
-                          const isMatch = !selectedAccountId || transaction.account_id === selectedAccountId;
-                          console.log('Filtering transaction:', transaction.transaction_id, 'Match:', isMatch);
-                          return isMatch;
-                        })} 
+                        transactions={transactions.filter(transaction => selectedAccountId === null || transaction.account_id === selectedAccountId)} 
                         selectedAccountId={selectedAccountId} 
                       />
                     </div>
@@ -311,6 +314,13 @@ const App: React.FC = () => {
                 </div>
               </div>
             </div>
+
+            {generatedText && (
+              <div className="bg-white rounded-lg shadow p-6 mt-6">
+                <h2 className="text-xl font-semibold mb-4">Generated Text</h2>
+                <p className="text-gray-800">{generatedText}</p>
+              </div>
+            )}
           </div>
         ) : (
           <div className="flex justify-center">

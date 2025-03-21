@@ -13,6 +13,8 @@ const cors = require("cors");
 const {Configuration, PlaidApi, PlaidEnvironments} = require("plaid");
 const {initializeApp} = require("firebase-admin/app");
 const {getFirestore} = require("firebase-admin/firestore");
+const functions = require('firebase-functions');
+const axios = require('axios');
 
 // Initialize Firebase Admin
 initializeApp();
@@ -221,6 +223,31 @@ app.post("/api", async (req, res) => {
   } else {
     console.error("Invalid action:", action);
     res.status(404).json({error: "Invalid action"});
+  }
+});
+
+// Get the Resend API key from Firebase config
+const resendApiKey = functions.config().resend.key;
+
+exports.sendEmail = functions.https.onRequest(async (req, res) => {
+  const { to, subject, text } = req.body;
+
+  try {
+    const response = await axios.post('https://api.resend.com/send', {
+      to,
+      subject,
+      text,
+    }, {
+      headers: {
+        'Authorization': `Bearer ${resendApiKey}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    res.status(200).send('Email sent successfully');
+  } catch (error) {
+    console.error('Error sending email:', error);
+    res.status(500).send('Error sending email');
   }
 });
 
