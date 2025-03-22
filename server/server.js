@@ -2,12 +2,14 @@ const express = require('express');
 const cors = require('cors');
 const { Configuration, PlaidApi, PlaidEnvironments } = require('plaid');
 require('dotenv').config();
-
 const app = express();
+const userCursors = {}; // In-memory store: userId -> cursor
+const userAccessTokens = {}; // In-memory store: userId -> access_token
+
 
 // Configure CORS
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://localhost:5176'],
+  origin: ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:5176'],
   methods: ['GET', 'POST', 'OPTIONS'],
   credentials: true,
   allowedHeaders: ['Content-Type', 'Authorization']
@@ -66,17 +68,23 @@ app.post('/api/create-link-token', async (req, res) => {
 app.post('/api/exchange-token', async (req, res) => {
   try {
     console.log('Received request to exchange token');
-    
-    if (!req.body.public_token) {
-      throw new Error('Public token is required');
-    }
+
+    const { public_token, user_id } = req.body;
+    if (!public_token) throw new Error('Public token is required');
+    if (!user_id) throw new Error('User ID is required');
 
     const response = await plaidClient.itemPublicTokenExchange({
-      public_token: req.body.public_token,
+      public_token,
     });
-    
-    console.log('Successfully exchanged token');
-    res.json({ access_token: response.data.access_token });
+
+    const accessToken = response.data.access_token;
+
+    // 🔐 Store access token per user
+    userAccessTokens[user_id] = accessToken;
+
+    console.log(`✅ Stored access token for user: ${user_id}`);
+
+    res.json({ access_token: accessToken });
   } catch (error) {
     console.error('Error exchanging token:', error.response?.data || error.message);
     res.status(500).json({ 
@@ -85,6 +93,43 @@ app.post('/api/exchange-token', async (req, res) => {
     });
   }
 });
+
+app.post('/api/transactions/sync', async (req, res) => {
+  try {
+    const { user_id } = req.body;
+
+    if (!user_id) throw new Error('User ID is required');
+    const accessToken = userAccessTokens[user_id];
+    if (!accessToken) throw new Error('Access token not found for user');
+
+    let cursor = userCursors[user_id] || null;
+    const allAdded = [];
+
+    do {
+      const response = await plaidClient.transactionsSync({
+        access_token: accessToken,
+        cursor: cursor,
+      });
+
+      allAdded.push(...response.data.added);
+      cursor = response.data.next_cursor;
+
+      if (!response.data.has_more) break;
+    } while (true);
+
+    // Store updated cursor
+    userCursors[user_id] = cursor;
+
+    res.json({ added: allAdded });
+  } catch (error) {
+    console.error('Error syncing transactions:', error.response?.data || error.message);
+    res.status(500).json({
+      error: 'Failed to sync transactions',
+      details: error.response?.data || error.message
+    });
+  }
+});
+
 
 app.post('/api/transactions', async (req, res) => {
   try {
@@ -116,6 +161,16 @@ app.post('/api/transactions', async (req, res) => {
       details: error.response?.data || error.message
     });
   }
+});
+
+// Add a webhook endpoint to handle new transaction notifications
+app.post('/api/webhook/transactions', (req, res) => {
+    console.log('Received webhook for new transaction:', req.body);
+    // TODO: Add logic to process the transaction data
+    // For example, update the database, send notifications, etc.
+
+    // Respond to acknowledge receipt of the webhook
+    res.status(200).send('Webhook received');
 });
 
 // Error handling middleware

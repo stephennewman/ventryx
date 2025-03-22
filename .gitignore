@@ -39,3 +39,4 @@ Thumbs.db
 
 # Local Netlify folder
 .netlify
+serviceAccountKey.json
