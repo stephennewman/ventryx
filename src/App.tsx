@@ -202,12 +202,13 @@ const App: React.FC = () => {
               </div>
             )}
 
-            {/* OpenAI Chat Integration Here */}
-            <div className="bg-white rounded-lg shadow p-6 mt-6">
-              <h2 className="text-xl font-semibold mb-4">AI Chat Assistant</h2>
-              {/* pass transactions state into your chat */}
+            {accounts.length > 0 && (
+              <div className="bg-white rounded-lg shadow p-6 mt-6">
+                <h2 className="text-xl font-semibold mb-4">AI Chat Assistant</h2>
+                {/* pass transactions state into your chat */}
                 <OpenAIChat transactions={transactions} />
-            </div>
+              </div>
+            )}
           </div>
         ) : (
           <div className="flex justify-center">
