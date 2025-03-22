@@ -4,7 +4,7 @@ import { onAuthStateChanged, User } from 'firebase/auth';
 import { usePlaidLink, PlaidLinkError } from 'react-plaid-link';
 import { plaidClient, Transaction, Account } from './plaid';
 import TransactionFeed from './components/TransactionFeed';
-
+import OpenAIChat from './components/OpenAIChat';
 
 interface PlaidEvent {
   eventName: string;
@@ -17,7 +17,6 @@ const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
-  const [accessToken, setAccessToken] = useState<string | null>(null);
   const [linkToken, setLinkToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -36,38 +35,17 @@ const App: React.FC = () => {
   useEffect(() => {
     const createLinkToken = async () => {
       if (!user) return;
-      
+
       try {
         setIsLoading(true);
         setError(null);
-        console.log('Creating link token for user:', user.uid);
-        
         const response = await fetch(`${API_URL}`, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ 
-            action: 'create-link-token',
-            user_id: user.uid 
-          }),
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'create-link-token', user_id: user.uid }),
         });
 
-        const contentType = response.headers.get('content-type');
-        if (!contentType || !contentType.includes('application/json')) {
-          throw new Error(`Unexpected response type: ${contentType}`);
-        }
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
-        }
-
         const data = await response.json();
-        console.log('Link token created successfully:', data);
-        if (!data.link_token) {
-          throw new Error('No link token in response');
-        }
         setLinkToken(data.link_token);
       } catch (err) {
         console.error('Error creating link token:', err);
@@ -77,39 +55,20 @@ const App: React.FC = () => {
       }
     };
 
-    if (user) {
-      createLinkToken();
-    }
+    if (user) createLinkToken();
   }, [user]);
 
   const fetchTransactions = async () => {
     if (!user) return;
 
     try {
-      console.log('Fetching transactions from backend');
       const response = await fetch(`${API_URL}`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          action: 'transactions',
-          userId: user.uid
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'transactions', userId: user.uid }),
       });
 
-      const contentType = response.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
-        throw new Error(`Unexpected response type: ${contentType}`);
-      }
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
-      }
-
       const data = await response.json();
-      console.log('Successfully fetched transactions:', data);
       setTransactions(data.transactions);
       setAccounts(data.accounts);
     } catch (err) {
@@ -119,44 +78,16 @@ const App: React.FC = () => {
   };
 
   const handlePlaidSuccess = async (publicToken: string) => {
-    try {
-      if (!user) {
-        throw new Error('User not authenticated');
-      }
+    if (!user) return;
 
+    try {
       setIsLoading(true);
-      setError(null);
-      console.log('Plaid Link success callback received public token:', publicToken);
-      
-      const requestBody = { 
-        action: 'exchange-token',
-        publicToken: publicToken,
-        userId: user.uid
-      };
-      console.log('Sending request to backend:', requestBody);
-      
-      const response = await fetch(`${API_URL}`, {
+      await fetch(`${API_URL}`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestBody),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'exchange-token', publicToken, userId: user.uid }),
       });
 
-      const contentType = response.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
-        throw new Error(`Unexpected response type: ${contentType}`);
-      }
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      console.log('Successfully exchanged token:', data);
-      
-      // Fetch initial transactions
       await fetchTransactions();
     } catch (err) {
       console.error('Error exchanging token:', err);
@@ -172,22 +103,15 @@ const App: React.FC = () => {
     onExit: (err: PlaidLinkError | null) => {
       if (err) console.error('Plaid Link exit:', err);
     },
-    onEvent: (eventName: string, metadata: Record<string, any>) => {
-      console.log('Plaid Link event:', eventName, metadata);
-    },
-    onLoad: () => {
-      console.log('Plaid Link loaded');
-    },
     language: 'en',
     countryCodes: ['US'],
-    env: 'sandbox'
+    env: 'sandbox',
   });
 
   const clearFilters = () => {
     setSelectedAccountId(null);
   };
 
-  
   return (
     <div className="min-h-screen bg-gray-100">
       <div className="max-w-6xl mx-auto p-6">
@@ -206,11 +130,7 @@ const App: React.FC = () => {
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center space-x-4">
                   {user.photoURL && (
-                    <img
-                      src={user.photoURL}
-                      alt="User Avatar"
-                      className="w-12 h-12 rounded-full"
-                    />
+                    <img src={user.photoURL} alt="User Avatar" className="w-12 h-12 rounded-full" />
                   )}
                   <div className="text-left">
                     <h2 className="text-xl font-semibold">{user.displayName}</h2>
@@ -218,51 +138,24 @@ const App: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="flex items-center space-x-4">
-                  <button
-                    onClick={() => logOut()}
-                    className="text-gray-400 hover:text-gray-600 font-medium"
-                  >
-                    Sign Out
-                  </button>
+                <button
+                  onClick={() => logOut()}
+                  className="text-gray-400 hover:text-gray-600 font-medium"
+                >
+                  Sign Out
+                </button>
 
-                  {isLoading ? (
-                    <div className="flex justify-center">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-                    </div>
-                  ) : accounts.length > 0 ? (
-                    <button
-                      onClick={() => {
-                        if (linkToken && ready) {
-                          open();
-                        }
-                      }}
-                      disabled={!ready || !linkToken}
-                      className="bg-green-600 text-white font-semibold px-6 py-3 rounded-lg shadow hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <div className="flex items-center justify-center space-x-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                        </svg>
-                        <span>Connected • Add Another Account</span>
-                      </div>
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => {
-                        if (linkToken && ready) {
-                          open();
-                        }
-                      }}
-                      disabled={!ready || !linkToken}
-                      className={`bg-blue-600 text-white font-semibold px-6 py-3 rounded-lg shadow hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 ${
-                        (!ready || !linkToken) ? 'opacity-50 cursor-not-allowed' : ''
-                      }`}
-                    >
-                      {!linkToken ? 'Loading...' : 'Connect Your Bank Account'}
-                    </button>
-                  )}
-                </div>
+                <button
+                  onClick={() => ready && open()}
+                  disabled={!ready || !linkToken}
+                  className={`font-semibold px-6 py-3 rounded-lg shadow ${
+                    accounts.length > 0
+                      ? 'bg-green-600 hover:bg-green-700 text-white'
+                      : 'bg-blue-600 hover:bg-blue-700 text-white'
+                  } disabled:opacity-50 disabled:cursor-not-allowed`}
+                >
+                  {accounts.length > 0 ? 'Connected • Add Another Account' : 'Connect Your Bank Account'}
+                </button>
               </div>
 
               {error && (
@@ -272,44 +165,31 @@ const App: React.FC = () => {
               )}
 
               <div className="flex space-x-6">
-                <div className="w-1/3">
-                  <div className="space-y-8 mt-8">
-                    <div className="grid grid-cols-1 gap-4">
-                      {accounts.map(account => (
-                        <div key={account.account_id} className="bg-blue-50 p-4 rounded-lg shadow-md cursor-pointer" onClick={() => { 
-                          console.log('Account clicked:', account.account_id);
-                          setSelectedAccountId(account.account_id);
-                          console.log('Selected Account ID set to:', account.account_id);
-                          clearFilters(); 
-                        }}>
-                          <div className="flex justify-between items-start">
-                            <div className="text-left">
-                              <h3 className="text-lg font-semibold text-gray-800">{account.name}</h3>
-                              <p className="text-sm text-gray-600">{account.type}</p>
-                            </div>
-                            <div className="text-right">
-                              <p className="text-xl font-bold text-gray-900">
-                                ${account.balances.current?.toFixed(2) || '0.00'}
-                              </p>
-                              <p className="text-sm text-gray-600">
-                                Available: ${account.balances.available?.toFixed(2) || '0.00'}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
+                <div className="w-1/3 space-y-8 mt-8">
+                  {accounts.map(account => (
+                    <div
+                      key={account.account_id}
+                      className="bg-blue-50 p-4 rounded-lg shadow-md cursor-pointer"
+                      onClick={() => {
+                        setSelectedAccountId(account.account_id);
+                        clearFilters();
+                      }}
+                    >
+                      <h3 className="text-lg font-semibold">{account.name}</h3>
+                      <p className="text-sm text-gray-600">{account.type}</p>
+                      <p className="text-xl font-bold">${account.balances.current?.toFixed(2)}</p>
                     </div>
-                  </div>
+                  ))}
                 </div>
+
                 <div className="w-2/3">
                   {accounts.length > 0 && (
-                    <div className="mt-8">
-                      {/* <h3 className="text-xl font-semibold mb-4 text-left">Recent Transactions</h3> */}
-                      <TransactionFeed 
-                        transactions={transactions.filter(transaction => selectedAccountId === null || transaction.account_id === selectedAccountId)} 
-                        selectedAccountId={selectedAccountId} 
-                      />
-                    </div>
+                    <TransactionFeed
+                      transactions={transactions.filter(
+                        transaction => !selectedAccountId || transaction.account_id === selectedAccountId
+                      )}
+                      selectedAccountId={selectedAccountId}
+                    />
                   )}
                 </div>
               </div>
@@ -318,16 +198,20 @@ const App: React.FC = () => {
             {generatedText && (
               <div className="bg-white rounded-lg shadow p-6 mt-6">
                 <h2 className="text-xl font-semibold mb-4">Generated Text</h2>
-                <p className="text-gray-800">{generatedText}</p>
+                <p>{generatedText}</p>
               </div>
             )}
+
+            {/* OpenAI Chat Integration Here */}
+            <div className="bg-white rounded-lg shadow p-6 mt-6">
+              <h2 className="text-xl font-semibold mb-4">AI Chat Assistant</h2>
+              {/* pass transactions state into your chat */}
+                <OpenAIChat transactions={transactions} />
+            </div>
           </div>
         ) : (
           <div className="flex justify-center">
-            <button
-              onClick={() => signInWithGoogle()}
-              className="bg-white text-gray-800 font-semibold py-2 px-4 border border-gray-400 rounded-lg shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-            >
+            <button onClick={signInWithGoogle} className="bg-white border py-2 px-4 rounded-lg">
               Sign in with Google
             </button>
           </div>
@@ -337,4 +221,4 @@ const App: React.FC = () => {
   );
 };
 
-export default App; 
+export default App;
