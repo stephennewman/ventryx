@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 
 
@@ -7,8 +7,28 @@ function OpenAIChat({ transactions }) {
   const [chatLog, setChatLog] = useState([]);
   const [loading, setLoading] = useState(false);
 
+  const chatLogRef = useRef(null);
+  const inputRef = useRef(null);
+
+  useEffect(() => {
+    if (chatLogRef.current) {
+      chatLogRef.current.scrollTop = chatLogRef.current.scrollHeight;
+    }
+  }, [chatLog]);
+
+  useEffect(() => {
+    if (!loading && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [loading]);
+
   const handleSend = async () => {
     if (!prompt.trim()) return;
+
+    setPrompt('');
+    if (inputRef.current) {
+      inputRef.current.focus();
+    }
 
     const updatedChatLog = [...chatLog, { role: 'user', content: prompt }];
     setChatLog(updatedChatLog);
@@ -32,14 +52,13 @@ function OpenAIChat({ transactions }) {
       console.error('Fetch error:', error);
       setChatLog([...updatedChatLog, { role: 'assistant', content: 'Something went wrong.' }]);
     } finally {
-      setPrompt('');
       setLoading(false);
     }
   };
 
   return (
     <div className="bg-white shadow rounded-lg p-4 max-w-3xl mx-auto my-6">
-      <div className="h-64 overflow-y-auto mb-4 p-2 border rounded">
+      <div ref={chatLogRef} className="h-64 overflow-y-auto mb-4 p-2 border rounded">
         {chatLog.map((chat, index) => (
           <div key={index} className={`my-2 ${chat.role === 'user' ? 'text-right' : 'text-left'}`}>
             <span className={`inline-block rounded-lg px-4 py-2 ${chat.role === 'user' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-800'}`}>
@@ -51,10 +70,16 @@ function OpenAIChat({ transactions }) {
 
       <div className="flex space-x-2">
         <input
+          ref={inputRef}
           type="text"
           placeholder="Ask me anything..."
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              handleSend();
+            }
+          }}
           className="flex-1 border rounded p-2"
           disabled={loading}
         />
