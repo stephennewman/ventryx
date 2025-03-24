@@ -15,6 +15,7 @@ const {initializeApp} = require("firebase-admin/app");
 const {getFirestore} = require("firebase-admin/firestore");
 const functions = require('firebase-functions');
 const axios = require('axios');
+const { OpenAI } = require('openai');
 
 // Initialize Firebase Admin
 initializeApp();
@@ -26,7 +27,7 @@ const app = express();
 
 // Enable CORS with more permissive options
 app.use(cors({
-  origin: ["https://ventryx.netlify.app", "http://localhost:5176"],
+  origin: ["https://get.krezzo.com", "http://localhost:5173", "http://localhost:5176"],
   methods: ["GET", "POST", "OPTIONS"],
   allowedHeaders: [
     "Content-Type",
@@ -41,7 +42,13 @@ app.use(cors({
 
 // Add CORS headers middleware
 app.use((req, res, next) => {
-  res.header("Access-Control-Allow-Origin", "https://ventryx.netlify.app");
+  const allowedOrigins = ["https://get.krezzo.com", "http://localhost:5173", "http://localhost:5176"];
+  const origin = req.headers.origin;
+  
+  if (allowedOrigins.includes(origin)) {
+    res.header("Access-Control-Allow-Origin", origin);
+  }
+  
   res.header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   res.header(
       "Access-Control-Allow-Headers",
@@ -226,28 +233,97 @@ app.post("/api", async (req, res) => {
   }
 });
 
-// Get the Resend API key from Firebase config
-const resendApiKey = functions.config().resend.key;
-
-exports.sendEmail = functions.https.onRequest(async (req, res) => {
-  const { to, subject, text } = req.body;
-
+// OpenAI chat endpoints
+app.post('/api/openai/chat', async (req, res) => {
+  const { prompt } = req.body;
   try {
-    const response = await axios.post('https://api.resend.com/send', {
-      to,
-      subject,
-      text,
-    }, {
-      headers: {
-        'Authorization': `Bearer ${resendApiKey}`,
-        'Content-Type': 'application/json',
-      },
+    const openai = new OpenAI({ apiKey: functions.config().openai.key });
+    const completion = await openai.chat.completions.create({
+      messages: [{ role: "user", content: prompt }],
+      model: "gpt-4"
     });
 
-    res.status(200).send('Email sent successfully');
+    res.json({ reply: completion.choices[0].message.content });
   } catch (error) {
-    console.error('Error sending email:', error);
-    res.status(500).send('Error sending email');
+    console.error('OpenAI error:', error);
+    res.status(500).json({ error: 'Failed to fetch response from OpenAI', details: error.message });
+  }
+});
+
+app.post('/api/openai/chat-with-transactions', async (req, res) => {
+  const { messages, transactions } = req.body;
+
+  // Validate input
+  if (!Array.isArray(messages) || !Array.isArray(transactions)) {
+    return res.status(400).json({
+      error: 'messages and transactions are required and must be arrays',
+    });
+  }
+
+  try {
+    const openai = new OpenAI({ apiKey: functions.config().openai.key });
+    
+    // System prompt for the AI assistant
+    const systemPrompt = `
+You are a helpful financial assistant. You have access to a user's transaction history and help answer questions, analyze spending, and forecast budgets.
+
+Respond in markdown. Be concise but informative. Use bullet points or tables when helpful.
+
+Current date is ${new Date().toLocaleDateString()}. 
+
+Capabilities:
+- Calculate totals, averages, frequencies
+- Identify spending by date, merchant, category
+- Offer budgeting or saving tips
+- Forecast likely monthly spending based on existing patterns
+
+Only reference the data if the prompt relates to transactions or spending.
+If the user's message is conversational or general, respond appropriately without referencing their data.
+    `.trim();
+
+    // Format transaction data for context
+    const formattedTransactions = transactions.map(txn => ({
+      date: txn.date,
+      name: txn.name,
+      amount: txn.amount,
+      category: txn.category?.[0] || 'Uncategorized',
+    }));
+    const dataString = JSON.stringify(formattedTransactions, null, 2);
+
+    // Last message from the user
+    const lastUserMessage = messages.slice().reverse().find(msg => msg.role === 'user')?.content || '';
+
+    // Check if the message is related to spending
+    const financialKeywords = /spend|purchase|cost|transaction|budget|buy|bought|amount|paid|expense|Uber|Starbucks|total/i;
+    const shouldInjectData = financialKeywords.test(lastUserMessage);
+
+    // Compose final messages
+    const finalMessages = [
+      { role: 'system', content: systemPrompt },
+      ...messages,
+    ];
+
+    if (shouldInjectData) {
+      finalMessages.push({
+        role: 'user',
+        content: `Here are the user's transactions:\n${dataString}`,
+      });
+    }
+
+    // Send to OpenAI
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4',
+      messages: finalMessages,
+      temperature: 0.7,
+    });
+
+    res.json({ message: completion.choices[0].message.content });
+  } catch (error) {
+    console.error('🧠 OpenAI chat error:', error);
+    res.status(500).json({
+      error: 'Failed to generate a response',
+      details: error.message,
+    });
   }
 });
 
@@ -257,7 +333,7 @@ exports.api = onRequest(
       region: "us-central1",
       invoker: "public",
       cors: {
-        origin: true,
+        origin: ["https://get.krezzo.com", "http://localhost:5173", "http://localhost:5176"],
         methods: ["GET", "POST", "OPTIONS"],
         allowHeaders: [
           "Content-Type",
