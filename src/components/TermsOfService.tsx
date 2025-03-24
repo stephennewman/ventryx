@@ -8,7 +8,7 @@ const TermsOfService: React.FC = () => {
         <div className="mb-8 flex justify-center">
           <img
             src="https://s3.ca-central-1.amazonaws.com/logojoy/logos/215772753/noBgColor.png?19117.199999999255"
-            alt="Ventryx Logo"
+            alt="Krezzo Logo"
             className="h-12 w-auto"
           />
         </div>
@@ -20,14 +20,14 @@ const TermsOfService: React.FC = () => {
             <section>
               <h2 className="text-xl font-semibold mb-4">1. Agreement to Terms</h2>
               <p className="text-gray-700">
-                By accessing or using Ventryx's services, you agree to be bound by these Terms of Service. If you disagree with any part of the terms, you do not have permission to access our services.
+                By accessing or using Krezzo's services, you agree to be bound by these Terms of Service. If you disagree with any part of the terms, you do not have permission to access our services.
               </p>
             </section>
 
             <section>
               <h2 className="text-xl font-semibold mb-4">2. Description of Services</h2>
               <p className="text-gray-700">
-                Ventryx provides financial insights and transaction monitoring services that:
+                Krezzo provides financial insights and transaction monitoring services that:
               </p>
               <ul className="list-disc pl-5 mt-2 text-gray-700">
                 <li>Connect to your financial accounts through secure third-party integrations</li>
@@ -84,14 +84,14 @@ const TermsOfService: React.FC = () => {
             <section>
               <h2 className="text-xl font-semibold mb-4">6. Intellectual Property</h2>
               <p className="text-gray-700">
-                The Ventryx service, including its original content, features, and functionality, is owned by Ventryx and is protected by international copyright, trademark, patent, trade secret, and other intellectual property laws.
+                The Krezzo service, including its original content, features, and functionality, is owned by Krezzo and is protected by international copyright, trademark, patent, trade secret, and other intellectual property laws.
               </p>
             </section>
 
             <section>
               <h2 className="text-xl font-semibold mb-4">7. Limitation of Liability</h2>
               <p className="text-gray-700">
-                Ventryx and its suppliers shall not be liable for any indirect, incidental, special, consequential, or punitive damages resulting from your access to or use of our services. This includes any errors or omissions in any content, or any loss or damage incurred as a result of the use of any content posted, transmitted, or otherwise made available via the service.
+                Krezzo and its suppliers shall not be liable for any indirect, incidental, special, consequential, or punitive damages resulting from your access to or use of our services. This includes any errors or omissions in any content, or any loss or damage incurred as a result of the use of any content posted, transmitted, or otherwise made available via the service.
               </p>
             </section>
 
@@ -107,7 +107,7 @@ const TermsOfService: React.FC = () => {
               <p className="text-gray-700">
                 If you have any questions about these Terms, please contact us at:
                 <br />
-                Email: terms@ventryx.com
+                Email: terms@krezzo.com
               </p>
             </section>
           </div>

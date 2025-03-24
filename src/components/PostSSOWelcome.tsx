@@ -48,9 +48,9 @@ const PostSSOWelcome: React.FC<PostSSOWelcomeProps> = ({ user, onComplete }) => 
   return (
     <div className="max-w-md mx-auto bg-white rounded-lg shadow-lg p-8">
       <div>
-        <h2 className="text-center text-2xl font-bold text-gray-900">
-          Welcome to Ventryx!
-        </h2>
+        <h1 className="text-3xl font-bold text-gray-900 sm:text-4xl">
+          Welcome to Krezzo!
+        </h1>
         <p className="mt-2 text-center text-sm text-gray-600">
           Add your phone number to improve your experience.
         </p>
@@ -85,7 +85,7 @@ const PostSSOWelcome: React.FC<PostSSOWelcomeProps> = ({ user, onComplete }) => 
           </div>
           <div className="ml-3 text-sm">
             <label htmlFor="sms-consent" className="font-medium text-gray-700">
-              I agree to receive recurring SMS messages from Ventryx at the number provided. These messages may include transaction alerts, financial insights, and account updates. Message frequency varies. Msg & data rates may apply. Reply STOP to opt out.{' '}
+              I agree to receive recurring SMS messages from Krezzo at the number provided. These messages may include transaction alerts, financial insights, and account updates. Message frequency varies. Msg & data rates may apply. Reply STOP to opt out.{' '}
               <a href="/privacy-policy" className="text-blue-600 hover:text-blue-500">
                 View our Privacy Policy
               </a>

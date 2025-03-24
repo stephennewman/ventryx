@@ -8,7 +8,7 @@ const PrivacyPolicy: React.FC = () => {
         <div className="mb-8 flex justify-center">
           <img
             src="https://s3.ca-central-1.amazonaws.com/logojoy/logos/215772753/noBgColor.png?19117.199999999255"
-            alt="Ventryx Logo"
+            alt="Krezzo Logo"
             className="h-12 w-auto"
           />
         </div>
@@ -96,7 +96,7 @@ const PrivacyPolicy: React.FC = () => {
               <p className="text-gray-700">
                 If you have any questions about this Privacy Policy, please contact us at:
                 <br />
-                Email: privacy@ventryx.com
+                Email: privacy@krezzo.com
               </p>
             </section>
 

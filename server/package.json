@@ -1,7 +1,7 @@
 {
-  "name": "ventryx-server",
+  "name": "server",
   "version": "1.0.0",
-  "description": "Backend server for Ventryx",
+  "description": "Backend server for Krezzo",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
