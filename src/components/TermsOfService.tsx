@@ -7,9 +7,9 @@ const TermsOfService: React.FC = () => {
       <div className="max-w-3xl mx-auto">
         <div className="mb-8 flex justify-center">
           <img
-            src="https://s3.ca-central-1.amazonaws.com/logojoy/logos/215772753/noBgColor.png?19117.199999999255"
+            src="https://blog.krezzo.com/hs-fs/hubfs/Krezzo-Logo-2023-Light.png?width=3248&height=800"
             alt="Krezzo Logo"
-            className="h-12 w-auto"
+            className="h-8 w-auto"
           />
         </div>
         

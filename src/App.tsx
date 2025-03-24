@@ -154,10 +154,10 @@ const App: React.FC = () => {
       <div className="max-w-6xl mx-auto p-6">
         <div className="text-center mb-8">
           <img
-            src="https://s3.ca-central-1.amazonaws.com/logojoy/logos/215772753/noBgColor.png?19117.199999999255"
+            src="https://blog.krezzo.com/hs-fs/hubfs/Krezzo-Logo-2023-Light.png?width=3248&height=800"
             alt="Logo"
             className="mx-auto mb-2"
-            style={{ width: '25%', height: 'auto' }}
+            style={{ width: 'auto', height: '32px' }}
           />
         </div>
 
