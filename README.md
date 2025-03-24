@@ -1,4 +1,4 @@
-# Ventryx - Real-time Budget Consultant
+# Krezzo - Real-time Budget Consultant
 
 A modern financial management application that helps you track your transactions and manage your budget in real-time. Built with React, TypeScript, Tailwind CSS, and Plaid API.
 
