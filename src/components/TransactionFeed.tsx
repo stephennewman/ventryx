@@ -3,6 +3,7 @@ import { Transaction } from '../plaid';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { FaCalendarAlt, FaSort } from 'react-icons/fa';
+import TransactionDrawer from './TransactionDrawer';
 
 interface TransactionFeedProps {
   transactions: Transaction[];
@@ -29,6 +30,8 @@ const TransactionFeed: React.FC<TransactionFeedProps> = ({ transactions, selecte
   const maxTransactionAmount = Math.max(...transactions.map(transaction => Math.abs(transaction.amount)));
   const totalWithdrawals = transactions.reduce((sum, transaction) => transaction.amount > 0 ? sum + transaction.amount : sum, 0);
   const [sortOption, setSortOption] = useState<string>('date');
+  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   const handleCategoryClick = (category: string) => {
     setSelectedCategory(category === selectedCategory ? null : category);
@@ -101,6 +104,11 @@ const TransactionFeed: React.FC<TransactionFeedProps> = ({ transactions, selecte
 
   const lastXDays = filteredTransactions.length > 0 ? Math.ceil((new Date().getTime() - new Date(Math.min(...filteredTransactions.map(transaction => new Date(transaction.date).getTime()))).getTime()) / (1000 * 3600 * 24)) : 0;
 
+  const handleTransactionClick = (transaction: Transaction) => {
+    setSelectedTransaction(transaction);
+    setIsDrawerOpen(true);
+  };
+
   console.log('TransactionFeed - transactions prop:', transactions);
   console.log('TransactionFeed - filteredTransactions:', filteredTransactions);
 
@@ -162,24 +170,28 @@ const TransactionFeed: React.FC<TransactionFeedProps> = ({ transactions, selecte
       {filteredTransactions.map((transaction) => (
         <div
           key={transaction.transaction_id}
-          className="bg-white p-2 rounded-lg shadow-md hover:shadow-lg transition-shadow relative"
+          className="bg-white p-2 rounded-lg shadow-md hover:shadow-lg transition-shadow relative cursor-pointer z-0"
+          onClick={() => handleTransactionClick(transaction)}
         >
           <div
             className={`absolute inset-y-0 left-0 ${transaction.amount < 0 ? 'bg-green-500' : 'bg-red-500'} opacity-20`}
             style={{ width: `${(Math.abs(transaction.amount) / maxFilteredTransactionAmount) * 100}%` }}
           />
-          <div className="flex justify-between items-center relative z-10">
+          <div className="flex justify-between items-center relative">
             <div className="flex-1 min-w-0 text-left">
               <div className="flex items-center">
                 <h4
-                  onClick={() => handleVendorClick(transaction.merchant_name || transaction.name)}
-                  className={`text-lg font-semibold text-gray-900 truncate text-left cursor-pointer ${selectedVendor === (transaction.merchant_name || transaction.name) ? 'underline' : ''}`}
+                  className={`text-lg font-semibold text-gray-900 truncate text-left hover:text-blue-600 cursor-pointer ${selectedVendor === (transaction.merchant_name || transaction.name) ? 'text-blue-600 underline' : ''}`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleVendorClick(transaction.merchant_name || transaction.name);
+                  }}
                 >
                   {transaction.merchant_name || transaction.name}
                 </h4>
                 {transaction.amount < 0 && (
                   <span
-                    onClick={() => handleCategoryClick('$')}
+                    onClick={(e) => { e.stopPropagation(); handleCategoryClick('$'); }}
                     className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full ml-2 cursor-pointer"
                   >
                     $
@@ -187,7 +199,7 @@ const TransactionFeed: React.FC<TransactionFeedProps> = ({ transactions, selecte
                 )}
                 {transaction.amount > 0 && (
                   <span
-                    onClick={() => handleCategoryClick('-$')}
+                    onClick={(e) => { e.stopPropagation(); handleCategoryClick('-$'); }}
                     className="px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full ml-2 cursor-pointer"
                   >
                     -$
@@ -198,7 +210,7 @@ const TransactionFeed: React.FC<TransactionFeedProps> = ({ transactions, selecte
                     {transaction.category.map((category, index) => (
                       <span
                         key={index}
-                        onClick={() => handleCategoryClick(category)}
+                        onClick={(e) => { e.stopPropagation(); handleCategoryClick(category); }}
                         className={`px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full cursor-pointer ${selectedCategory === category ? 'bg-blue-300' : ''}`}
                       >
                         {category}
@@ -212,8 +224,7 @@ const TransactionFeed: React.FC<TransactionFeedProps> = ({ transactions, selecte
               <p className="text-sm text-gray-600 mb-1">
                 {new Date(transaction.date).toLocaleDateString()}
               </p>
-              <p className={`text-lg font-semibold ${transaction.amount < 0 ? 'text-green-600' : 'text-red-600'}`}
-              >
+              <p className={`text-lg font-semibold ${transaction.amount < 0 ? 'text-green-600' : 'text-red-600'}`}>
                 ${Math.abs(transaction.amount).toFixed(2)}
               </p>
               {transaction.pending && (
@@ -223,6 +234,16 @@ const TransactionFeed: React.FC<TransactionFeedProps> = ({ transactions, selecte
           </div>
         </div>
       ))}
+
+      <TransactionDrawer
+        transaction={selectedTransaction}
+        isOpen={isDrawerOpen}
+        onClose={() => {
+          setIsDrawerOpen(false);
+          setSelectedTransaction(null);
+        }}
+        transactions={transactions}
+      />
     </div>
   );
 };

@@ -4,11 +4,23 @@ import { onAuthStateChanged, User } from 'firebase/auth';
 import { usePlaidLink, PlaidLinkError } from 'react-plaid-link';
 import { plaidClient, Transaction, Account } from './plaid';
 import TransactionFeed from './components/TransactionFeed';
-import OpenAIChat from './components/OpenAIChat';
+import ChatDrawer from './components/ChatDrawer';
+import { scrollToTop } from './utils/scrollManager';
 
 interface PlaidEvent {
   eventName: string;
-  metadata: Record<string, any>;
+  metadata: {
+    error_code?: string;
+    error_message?: string;
+    error_type?: string;
+    exit_status?: string;
+    institution_id?: string;
+    institution_name?: string;
+    link_session_id?: string;
+    request_id?: string;
+    status?: string;
+    [key: string]: string | undefined;
+  };
 }
 
 const API_URL = `${import.meta.env.VITE_API_URL}/api` || 'http://localhost:5176/api';
@@ -22,14 +34,23 @@ const App: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null);
   const [generatedText, setGeneratedText] = useState<string | null>(null);
+  const [isChatOpen, setIsChatOpen] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
       console.log('User state changed:', currentUser ? 'Signed in' : 'Signed out');
+      if (currentUser) {
+        console.log('Profile Image URL:', currentUser.photoURL);
+        scrollToTop();
+      }
     });
 
     return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    scrollToTop();
   }, []);
 
   useEffect(() => {
@@ -165,19 +186,19 @@ const App: React.FC = () => {
               )}
 
               <div className="flex space-x-6">
-                <div className="w-1/3 space-y-8 mt-8">
+                <div className="w-1/3 space-y-8">
                   {accounts.map(account => (
                     <div
                       key={account.account_id}
-                      className="bg-blue-50 p-4 rounded-lg shadow-md cursor-pointer"
+                      className="bg-blue-50 p-4 rounded-lg shadow-md cursor-pointer text-left"
                       onClick={() => {
                         setSelectedAccountId(account.account_id);
                         clearFilters();
                       }}
                     >
-                      <h3 className="text-lg font-semibold">{account.name}</h3>
-                      <p className="text-sm text-gray-600">{account.type}</p>
-                      <p className="text-xl font-bold">${account.balances.current?.toFixed(2)}</p>
+                      <h3 className="text-lg font-semibold text-left">{account.name}</h3>
+                      <p className="text-sm text-gray-600 text-left">{account.type}</p>
+                      <p className="text-xl font-bold text-left">${account.balances.current?.toFixed(2)}</p>
                     </div>
                   ))}
                 </div>
@@ -203,10 +224,20 @@ const App: React.FC = () => {
             )}
 
             {accounts.length > 0 && (
-              <div className="bg-white rounded-lg shadow p-6 mt-6">
-                <h2 className="text-xl font-semibold mb-4">AI Chat Assistant</h2>
-                {/* pass transactions state into your chat */}
-                <OpenAIChat transactions={transactions} />
+              <div className="fixed bottom-4 right-4">
+                <button
+                  onClick={() => setIsChatOpen(true)}
+                  className="bg-blue-500 hover:bg-blue-600 text-white rounded-full p-4 shadow-lg transition-colors"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                  </svg>
+                </button>
+                <ChatDrawer
+                  isOpen={isChatOpen}
+                  onClose={() => setIsChatOpen(false)}
+                  transactions={transactions}
+                />
               </div>
             )}
           </div>

@@ -39,3 +39,10 @@ Thumbs.db
 
 # Local Netlify folder
 .netlify
+
+# Test files
+test-sms.js
+tests/
+
+# Environment files
+.env.example
