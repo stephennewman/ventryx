@@ -3,12 +3,13 @@ const cors = require('cors');
 const path = require('path');
 const { Configuration, PlaidApi, PlaidEnvironments } = require('plaid');
 const { OpenAI } = require('openai');
+const admin = require('firebase-admin');
 require('dotenv').config({ path: path.join(__dirname, '../.env') });
 
 const app = express();
 
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://localhost:5176'],
+  origin: ['http://localhost:5173', 'https://ventryx.netlify.app'],
   methods: ['GET', 'POST', 'OPTIONS'],
   credentials: true,
   allowedHeaders: ['Content-Type', 'Authorization']
@@ -104,7 +105,7 @@ app.post('/api/openai/chat', async (req, res) => {
   try {
     const completion = await openai.chat.completions.create({
       messages: [{ role: "user", content: prompt }],
-      model: "gpt-4o"
+      model: "gpt-4"
     });
 
     res.json({ reply: completion.choices[0].message.content });
@@ -174,7 +175,7 @@ If the user's message is conversational or general, respond appropriately withou
 
     // Send to OpenAI
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4o',
+      model: 'gpt-4',
       messages: finalMessages,
       temperature: 0.7,
     });
@@ -189,14 +190,18 @@ If the user's message is conversational or general, respond appropriately withou
   }
 });
 
-
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error('Unhandled error:', err);
   res.status(500).json({ error: 'Internal server error', details: err.message });
 });
 
-const PORT = process.env.PORT || 5176;
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-});
+// Start server if running directly (not as a module)
+if (require.main === module) {
+  const PORT = process.env.PORT || 5176;
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+}
+
+module.exports = app;
