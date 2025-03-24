@@ -33,6 +33,7 @@ const API_URL = `${import.meta.env.VITE_API_URL}/api` || 'http://localhost:5176/
 const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState<boolean>(false);
+  const [isCheckingOnboarding, setIsCheckingOnboarding] = useState(true);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [linkToken, setLinkToken] = useState<string | null>(null);
@@ -52,9 +53,17 @@ const App: React.FC = () => {
         scrollToTop();
         
         // Check if user has completed onboarding
-        const db = getFirestore();
-        const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
-        setHasCompletedOnboarding(userDoc.exists());
+        try {
+          const db = getFirestore();
+          const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+          setHasCompletedOnboarding(userDoc.exists());
+        } catch (error) {
+          console.error('Error checking onboarding status:', error);
+        } finally {
+          setIsCheckingOnboarding(false);
+        }
+      } else {
+        setIsCheckingOnboarding(false);
       }
     });
 
@@ -162,7 +171,11 @@ const App: React.FC = () => {
         </div>
 
         {user ? (
-          hasCompletedOnboarding ? (
+          isCheckingOnboarding ? (
+            <div className="flex justify-center items-center h-64">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            </div>
+          ) : hasCompletedOnboarding ? (
             <div className="space-y-6">
               <div className="bg-white rounded-lg shadow p-6">
                 <div className="flex items-center justify-between mb-4">
