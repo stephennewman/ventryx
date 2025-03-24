@@ -8,7 +8,13 @@ require('dotenv').config({ path: path.join(__dirname, '../.env') });
 
 const app = express();
 
-// Let the Cloud Function handle CORS
+app.use(cors({
+  origin: ['http://localhost:5173', 'https://ventryx.netlify.app'],
+  methods: ['GET', 'POST', 'OPTIONS'],
+  credentials: true,
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
 app.use(express.json());
 
 // Verify environment variables
