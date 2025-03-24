@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 
 const PrivacyPolicy: React.FC = () => {
   return (
@@ -102,6 +103,11 @@ const PrivacyPolicy: React.FC = () => {
             <section className="text-sm text-gray-500">
               <p>Last updated: {new Date().toLocaleDateString()}</p>
             </section>
+          </div>
+          <div className="mt-8 text-sm text-gray-500">
+            <Link to="/terms-of-service" className="text-blue-600 hover:text-blue-800">
+              View Terms of Service
+            </Link>
           </div>
         </div>
       </div>

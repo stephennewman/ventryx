@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, Link } from 'react-router-dom';
 import { signInWithGoogle, logOut, auth } from './firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { usePlaidLink, PlaidLinkError } from 'react-plaid-link';
@@ -9,6 +9,7 @@ import TransactionFeed from './components/TransactionFeed';
 import ChatDrawer from './components/ChatDrawer';
 import PostSSOWelcome from './components/PostSSOWelcome';
 import PrivacyPolicy from './components/PrivacyPolicy';
+import TermsOfService from './components/TermsOfService';
 import { scrollToTop } from './utils/scrollManager';
 
 interface PlaidEvent {
@@ -281,6 +282,16 @@ const App: React.FC = () => {
             >
               Sign in with Google
             </button>
+            <p className="text-sm text-gray-500 mt-4">
+              By signing up, you agree to our{' '}
+              <Link to="/terms-of-service" className="text-blue-600 hover:text-blue-800">
+                Terms of Service
+              </Link>{' '}
+              and{' '}
+              <Link to="/privacy-policy" className="text-blue-600 hover:text-blue-800">
+                Privacy Policy
+              </Link>
+            </p>
           </div>
         )}
       </div>
@@ -291,6 +302,7 @@ const App: React.FC = () => {
     <Router>
       <Routes>
         <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+        <Route path="/terms-of-service" element={<TermsOfService />} />
         <Route path="/" element={<MainContent />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
