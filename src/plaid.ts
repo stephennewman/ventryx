@@ -20,9 +20,16 @@ export interface Transaction {
   amount: number;
   date: string;
   name: string;
-  merchant_name: string | null;
-  category: string[];
+  merchant_name?: string;
   pending: boolean;
+  category: string[];
+  location?: {
+    address?: string;
+    city?: string;
+    state?: string;
+    postal_code?: string;
+  };
+  payment_channel?: string;
 }
 
 const configuration = new Configuration({

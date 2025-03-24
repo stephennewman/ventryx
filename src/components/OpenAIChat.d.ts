@@ -1,11 +1,10 @@
-declare module './OpenAIChat' {
-  import React from 'react';
+import { Transaction } from '../plaid';
 
+declare module './OpenAIChat' {
   interface OpenAIChatProps {
-    transactions: any[]; // Adjust the type of transactions if you have a specific type
+    transactions: Transaction[];
   }
 
   const OpenAIChat: React.FC<OpenAIChatProps>;
-
   export default OpenAIChat;
 } 
