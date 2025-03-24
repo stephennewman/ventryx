@@ -32,25 +32,58 @@ const TransactionDrawer: React.FC<TransactionDrawerProps> = ({ transaction, isOp
         (t.merchant_name || t.name) === merchantName
       );
 
+      const stats = calculateMerchantStats();
+
       const messages = [{
         role: 'user',
-        content: `Analyze this transaction at ${merchantName} for $${Math.abs(transaction.amount)}.
-        
-        Transaction details:
-        - Date: ${new Date(transaction.date).toLocaleDateString()}
-        - Category: ${transaction.category?.join(', ')}
-        - Status: ${transaction.pending ? 'Pending' : 'Posted'}
-        
-        Historical context:
-        - Total transactions at this merchant: ${similarTransactions.length}
-        - Average transaction amount: $${(similarTransactions.reduce((sum, t) => sum + Math.abs(t.amount), 0) / similarTransactions.length).toFixed(2)}
-        
-        Please provide:
-        1. Is this a typical amount for this merchant?
-        2. Any unusual patterns or insights?
-        3. Quick budgeting or money-saving tip related to this type of expense.
-        
-        Keep the response friendly and concise (2-3 sentences).`
+        content: `Analyze this transaction and provide helpful insights with relevant links:
+
+Transaction:
+- Merchant: ${merchantName}
+- Amount: $${Math.abs(transaction.amount)}
+- Category: ${transaction.category?.join(', ')}
+- Date: ${new Date(transaction.date).toLocaleDateString()}
+
+Your Spending Pattern:
+- Frequency: ${similarTransactions.length} transactions at this merchant
+- Your average spend: $${(similarTransactions.reduce((sum, t) => sum + Math.abs(t.amount), 0) / similarTransactions.length).toFixed(2)}
+- Monthly spend at this merchant: $${stats?.monthlyAverage.toFixed(2)}
+
+Please provide a comprehensive analysis with helpful links:
+
+1. Transaction Analysis:
+   - How does this compare to your typical spending here?
+   - Any notable patterns or trends?
+   - Is this amount within a normal range for this category?
+
+2. Money-Saving Opportunities:
+   - Current deals or promotions at ${merchantName}
+   - Rewards programs or cashback opportunities
+   - Better timing suggestions for future purchases
+   - Alternative merchants with better value
+   - Student, military, or other applicable discounts
+
+3. Smart Shopping Tips:
+   - Link to merchant's rewards program (if available)
+   - Links to relevant coupon sites or deal aggregators
+   - Price comparison tools for this category
+   - Links to similar merchants' deals
+   - Any relevant credit card rewards programs
+
+4. Additional Resources:
+   - Reviews or comparison sites for this merchant
+   - Consumer protection or warranty information if relevant
+   - Budgeting tips specific to this category
+   - Links to relevant money-saving communities or forums
+
+Format the response with:
+- Bullet points for easy reading
+- Markdown links for all URLs
+- 3-4 concise, actionable insights
+- Focus on practical, immediate value
+- Include specific savings amounts when possible (e.g., "Save 15% with X program")
+
+Keep the tone friendly and focus on actionable opportunities to save money or get better value.`
       }];
 
       const response = await fetch('http://localhost:5176/api/openai/chat-with-transactions', {

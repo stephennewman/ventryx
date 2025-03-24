@@ -4,7 +4,7 @@ import { onAuthStateChanged, User } from 'firebase/auth';
 import { usePlaidLink, PlaidLinkError } from 'react-plaid-link';
 import { plaidClient, Transaction, Account } from './plaid';
 import TransactionFeed from './components/TransactionFeed';
-import OpenAIChat from './components/OpenAIChat';
+import ChatDrawer from './components/ChatDrawer';
 import { scrollToTop } from './utils/scrollManager';
 
 interface PlaidEvent {
@@ -34,6 +34,7 @@ const App: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null);
   const [generatedText, setGeneratedText] = useState<string | null>(null);
+  const [isChatOpen, setIsChatOpen] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -223,10 +224,20 @@ const App: React.FC = () => {
             )}
 
             {accounts.length > 0 && (
-              <div className="bg-white rounded-lg shadow p-6 mt-6">
-                <h2 className="text-xl font-semibold mb-4">AI Chat Assistant</h2>
-                {/* pass transactions state into your chat */}
-                <OpenAIChat transactions={transactions} />
+              <div className="fixed bottom-4 right-4">
+                <button
+                  onClick={() => setIsChatOpen(true)}
+                  className="bg-blue-500 hover:bg-blue-600 text-white rounded-full p-4 shadow-lg transition-colors"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                  </svg>
+                </button>
+                <ChatDrawer
+                  isOpen={isChatOpen}
+                  onClose={() => setIsChatOpen(false)}
+                  transactions={transactions}
+                />
               </div>
             )}
           </div>

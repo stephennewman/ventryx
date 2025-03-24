@@ -181,7 +181,11 @@ const TransactionFeed: React.FC<TransactionFeedProps> = ({ transactions, selecte
             <div className="flex-1 min-w-0 text-left">
               <div className="flex items-center">
                 <h4
-                  className={`text-lg font-semibold text-gray-900 truncate text-left ${selectedVendor === (transaction.merchant_name || transaction.name) ? 'underline' : ''}`}
+                  className={`text-lg font-semibold text-gray-900 truncate text-left hover:text-blue-600 cursor-pointer ${selectedVendor === (transaction.merchant_name || transaction.name) ? 'text-blue-600 underline' : ''}`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleVendorClick(transaction.merchant_name || transaction.name);
+                  }}
                 >
                   {transaction.merchant_name || transaction.name}
                 </h4>
