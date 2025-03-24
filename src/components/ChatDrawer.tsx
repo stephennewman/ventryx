@@ -54,9 +54,12 @@ const ChatDrawer: React.FC<ChatDrawerProps> = ({ isOpen, onClose, transactions }
     setLoading(true);
 
     try {
-      const response = await fetch('http://localhost:5176/api/openai/chat-with-transactions', {
+      setLoading(true);
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5176'}/api/openai/chat-with-transactions`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify({
           messages: updatedChatLog,
           transactions,

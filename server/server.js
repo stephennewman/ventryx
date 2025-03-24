@@ -8,7 +8,7 @@ require('dotenv').config({ path: path.join(__dirname, '../.env') });
 const app = express();
 
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://localhost:5176'],
+  origin: ['http://localhost:5173', 'http://localhost:5176', 'https://get.krezzo.com'],
   methods: ['GET', 'POST', 'OPTIONS'],
   credentials: true,
   allowedHeaders: ['Content-Type', 'Authorization']
@@ -174,7 +174,7 @@ If the user's message is conversational or general, respond appropriately withou
 
     // Send to OpenAI
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4o',
+      model: 'gpt-4',
       messages: finalMessages,
       temperature: 0.7,
     });
