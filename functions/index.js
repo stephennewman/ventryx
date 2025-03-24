@@ -16,6 +16,7 @@ const {getFirestore} = require("firebase-admin/firestore");
 const functions = require('firebase-functions');
 const axios = require('axios');
 const { OpenAI } = require('openai');
+require('dotenv').config();
 
 // Initialize Firebase Admin
 initializeApp();
@@ -237,7 +238,7 @@ app.post("/api", async (req, res) => {
 app.post('/api/openai/chat', async (req, res) => {
   const { prompt } = req.body;
   try {
-    const openai = new OpenAI({ apiKey: functions.config().openai.key });
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
     const completion = await openai.chat.completions.create({
       messages: [{ role: "user", content: prompt }],
       model: "gpt-4"
@@ -261,7 +262,7 @@ app.post('/api/openai/chat-with-transactions', async (req, res) => {
   }
 
   try {
-    const openai = new OpenAI({ apiKey: functions.config().openai.key });
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
     
     // System prompt for the AI assistant
     const systemPrompt = `
