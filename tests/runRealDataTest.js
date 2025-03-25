@@ -1,6 +1,6 @@
 require('dotenv').config();
 const admin = require('firebase-admin');
-const { testWithRealData } = require('./testRealData');
+const { testWithRealData } = require('../testRealData');
 const { Configuration, PlaidApi, PlaidEnvironments } = require('plaid');
 
 // Initialize Firebase Admin

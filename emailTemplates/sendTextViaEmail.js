@@ -1,4 +1,4 @@
-const { sendEmail } = require('./functions/emailService');
+const { sendEmail } = require('../functions/emailService');
 
 const CARRIER_GATEWAYS = {
   tmobile: '@tmomail.net',

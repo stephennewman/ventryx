@@ -72,10 +72,10 @@ const App: React.FC = () => {
       try {
         setIsLoading(true);
         setError(null);
-        const response = await fetch(`${API_URL}`, {
+        const response = await fetch(`${API_URL}/create-link-token`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'create-link-token', user_id: user.uid }),
+          body: JSON.stringify({ userId: user.uid }),
         });
 
         const data = await response.json();
@@ -95,10 +95,10 @@ const App: React.FC = () => {
     if (!user) return;
 
     try {
-      const response = await fetch(`${API_URL}`, {
+      const response = await fetch(`${API_URL}/transactions`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'transactions', userId: user.uid }),
+        body: JSON.stringify({ userId: user.uid }),
       });
 
       const data = await response.json();
@@ -110,36 +110,66 @@ const App: React.FC = () => {
     }
   };
 
-  const handlePlaidSuccess = async (publicToken: string) => {
-    if (!user) return;
-
-    try {
-      setIsLoading(true);
-      await fetch(`${API_URL}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'exchange-token', publicToken, userId: user.uid }),
-      });
-
-      await fetchTransactions();
-    } catch (err) {
-      console.error('Error exchanging token:', err);
-      setError(err instanceof Error ? err.message : 'Failed to exchange token');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const { open, ready } = usePlaidLink({
     token: linkToken,
-    onSuccess: handlePlaidSuccess,
+    onSuccess: (public_token, metadata) => {
+      console.log('Success:', { public_token, metadata });
+      handlePlaidSuccess(public_token);
+    },
     onExit: (err: PlaidLinkError | null) => {
-      if (err) console.error('Plaid Link exit:', err);
+      if (err) {
+        console.error('Plaid Link exit with error:', err);
+        setError(err.display_message || err.error_message || 'Error connecting to bank');
+      }
     },
     language: 'en',
     countryCodes: ['US'],
     env: 'sandbox',
   });
+
+  const handlePlaidSuccess = async (public_token: string) => {
+    if (!user) return;
+
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      console.log('Exchanging public token...', public_token);
+      const exchangeResponse = await fetch(`${API_URL}/exchange-token`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ publicToken: public_token, userId: user.uid }),
+      });
+
+      if (!exchangeResponse.ok) {
+        const errorData = await exchangeResponse.json();
+        throw new Error(errorData.details || 'Failed to exchange token');
+      }
+
+      const { access_token } = await exchangeResponse.json();
+      
+      console.log('Fetching transactions...');
+      const transactionsResponse = await fetch(`${API_URL}/transactions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.uid, access_token }),
+      });
+
+      if (!transactionsResponse.ok) {
+        const errorData = await transactionsResponse.json();
+        throw new Error(errorData.details || 'Failed to fetch transactions');
+      }
+
+      const data = await transactionsResponse.json();
+      setTransactions(data.transactions);
+      setAccounts(data.accounts);
+    } catch (err) {
+      console.error('Error in Plaid flow:', err);
+      setError(err instanceof Error ? err.message : 'Failed to connect bank account');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const clearFilters = () => {
     setSelectedAccountId(null);
@@ -185,14 +215,14 @@ const App: React.FC = () => {
 
                   <button
                     onClick={() => ready && open()}
-                    disabled={!ready || !linkToken}
+                    disabled={!ready || !linkToken || isLoading}
                     className={`font-semibold px-6 py-3 rounded-lg shadow ${
-                      accounts.length > 0
+                      (accounts?.length || 0) > 0
                         ? 'bg-green-600 hover:bg-green-700 text-white'
                         : 'bg-blue-600 hover:bg-blue-700 text-white'
                     } disabled:opacity-50 disabled:cursor-not-allowed`}
                   >
-                    {accounts.length > 0 ? 'Connected • Add Another Account' : 'Connect Your Bank Account'}
+                    {isLoading ? 'Loading...' : (accounts?.length || 0) > 0 ? 'Connected • Add Another Account' : 'Connect Your Bank Account'}
                   </button>
                 </div>
 
@@ -202,35 +232,42 @@ const App: React.FC = () => {
                   </div>
                 )}
 
-                <div className="flex space-x-6">
-                  <div className="w-1/3 space-y-8">
-                    {accounts.map(account => (
-                      <div
-                        key={account.account_id}
-                        className="bg-blue-50 p-4 rounded-lg shadow-md cursor-pointer text-left"
-                        onClick={() => {
-                          setSelectedAccountId(account.account_id);
-                          clearFilters();
-                        }}
-                      >
-                        <h3 className="text-lg font-semibold text-left">{account.name}</h3>
-                        <p className="text-sm text-gray-600 text-left">{account.type}</p>
-                        <p className="text-xl font-bold text-left">${account.balances.current?.toFixed(2)}</p>
-                      </div>
-                    ))}
+                {isLoading ? (
+                  <div className="text-center py-8">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+                    <p className="mt-4 text-gray-600">Loading...</p>
                   </div>
+                ) : (
+                  <div className="flex space-x-6">
+                    <div className="w-1/3 space-y-8">
+                      {(accounts || []).map(account => (
+                        <div
+                          key={account.account_id}
+                          className="bg-blue-50 p-4 rounded-lg shadow-md cursor-pointer text-left"
+                          onClick={() => {
+                            setSelectedAccountId(account.account_id);
+                            clearFilters();
+                          }}
+                        >
+                          <h3 className="text-lg font-semibold text-left">{account.name}</h3>
+                          <p className="text-sm text-gray-600 text-left">{account.type}</p>
+                          <p className="text-xl font-bold text-left">${account.balances.current?.toFixed(2)}</p>
+                        </div>
+                      ))}
+                    </div>
 
-                  <div className="w-2/3">
-                    {accounts.length > 0 && (
-                      <TransactionFeed
-                        transactions={transactions.filter(
-                          transaction => !selectedAccountId || transaction.account_id === selectedAccountId
-                        )}
-                        selectedAccountId={selectedAccountId}
-                      />
-                    )}
+                    <div className="w-2/3">
+                      {(accounts || []).length > 0 && (
+                        <TransactionFeed
+                          transactions={(transactions || []).filter(
+                            transaction => !selectedAccountId || transaction.account_id === selectedAccountId
+                          )}
+                          selectedAccountId={selectedAccountId}
+                        />
+                      )}
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
 
               {generatedText && (
@@ -240,7 +277,7 @@ const App: React.FC = () => {
                 </div>
               )}
 
-              {accounts.length > 0 && (
+              {(accounts || []).length > 0 && (
                 <div className="fixed bottom-4 right-4">
                   <button
                     onClick={() => setIsChatOpen(true)}
@@ -253,7 +290,7 @@ const App: React.FC = () => {
                   <ChatDrawer
                     isOpen={isChatOpen}
                     onClose={() => setIsChatOpen(false)}
-                    transactions={transactions}
+                    transactions={transactions || []}
                   />
                 </div>
               )}

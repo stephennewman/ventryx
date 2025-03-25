@@ -4,7 +4,7 @@ const path = require('path');
 const { Configuration, PlaidApi, PlaidEnvironments } = require('plaid');
 const { OpenAI } = require('openai');
 const admin = require('firebase-admin');
-require('dotenv').config({ path: path.join(__dirname, '../.env') });
+require('dotenv').config({ path: path.join(__dirname, '../.env.development') });
 
 const app = express();
 
@@ -18,8 +18,8 @@ app.use(cors({
 app.use(express.json());
 
 // Verify environment variables
-console.log('Plaid Client ID:', process.env.VITE_PLAID_CLIENT_ID ? 'Present' : 'Missing');
-console.log('Plaid Secret:', process.env.VITE_PLAID_SECRET ? 'Present' : 'Missing');
+console.log('Plaid Client ID:', process.env.PLAID_CLIENT_ID ? 'Present' : 'Missing');
+console.log('Plaid Secret:', process.env.PLAID_SECRET ? 'Present' : 'Missing');
 console.log('OpenAI API Key:', process.env.OPENAI_API_KEY ? 'Present' : 'Missing');
 
 // Plaid client setup
@@ -27,8 +27,8 @@ const configuration = new Configuration({
   basePath: PlaidEnvironments.sandbox,
   baseOptions: {
     headers: {
-      'PLAID-CLIENT-ID': process.env.VITE_PLAID_CLIENT_ID,
-      'PLAID-SECRET': process.env.VITE_PLAID_SECRET,
+      'PLAID-CLIENT-ID': process.env.PLAID_CLIENT_ID,
+      'PLAID-SECRET': process.env.PLAID_SECRET,
     },
   },
 });
@@ -45,18 +45,27 @@ app.get('/api/health', (req, res) => {
 
 // Plaid endpoints
 app.post('/api/create-link-token', async (req, res) => {
-  try {
-    const { userId } = req.body;
-    if (!userId) throw new Error('User ID is required');
+  const { userId } = req.body;
+  
+  if (!userId) {
+    return res.status(400).json({ error: 'User ID is required' });
+  }
 
-    const response = await plaidClient.linkTokenCreate({
+  try {
+    const config = {
       user: { client_user_id: userId },
       client_name: 'Ventryx',
       products: ['transactions'],
       country_codes: ['US'],
       language: 'en'
-    });
+    };
 
+    // For testing environment, return mock data
+    if (process.env.NODE_ENV === 'test') {
+      return res.json({ link_token: 'test-link-token' });
+    }
+
+    const response = await plaidClient.linkTokenCreate(config);
     res.json({ link_token: response.data.link_token });
   } catch (error) {
     console.error('Plaid create-link-token error:', error);
@@ -65,25 +74,52 @@ app.post('/api/create-link-token', async (req, res) => {
 });
 
 app.post('/api/exchange-token', async (req, res) => {
-  try {
-    const { public_token } = req.body;
-    if (!public_token) throw new Error('Public token is required');
+  const { publicToken, userId } = req.body;
+  
+  if (!publicToken || !userId) {
+    return res.status(400).json({ error: 'Public token and user ID are required' });
+  }
 
-    const response = await plaidClient.itemPublicTokenExchange({ public_token });
-    res.json({ access_token: response.data.access_token });
+  console.log('Exchanging public token for access token...');
+  try {
+    const response = await plaidClient.itemPublicTokenExchange({
+      public_token: publicToken
+    });
+    
+    // Store the access token in Firestore
+    const userRef = db.collection('users').doc(userId);
+    await userRef.set({
+      plaidAccessToken: response.data.access_token
+    }, { merge: true });
+
+    res.json({ success: true });
   } catch (error) {
     console.error('Plaid exchange-token error:', error);
-    res.status(500).json({ error: 'Failed to exchange token', details: error.message });
+    res.status(500).json({ 
+      error: 'Failed to exchange token', 
+      details: error.message,
+      code: error.response?.data?.error_code
+    });
   }
 });
 
 app.post('/api/transactions', async (req, res) => {
   try {
-    const { access_token } = req.body;
-    if (!access_token) throw new Error('Access token is required');
+    const { userId } = req.body;
+    if (!userId) {
+      return res.status(400).json({ error: 'User ID is required' });
+    }
+
+    // If no access token yet, return empty data
+    if (!req.body.access_token) {
+      return res.json({
+        transactions: [],
+        accounts: []
+      });
+    }
 
     const response = await plaidClient.transactionsGet({
-      access_token,
+      access_token: req.body.access_token,
       start_date: '2024-01-01',
       end_date: new Date().toISOString().split('T')[0],
       options: { count: 100, offset: 0 }
