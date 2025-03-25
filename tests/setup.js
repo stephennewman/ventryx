@@ -13,7 +13,12 @@ process.env.VITE_PLAID_ENV = 'sandbox';
 
 // Mock Firebase Admin
 jest.mock('firebase-admin', () => ({
+  apps: [],
   initializeApp: jest.fn(),
+  credential: {
+    applicationDefault: jest.fn(),
+    cert: jest.fn()
+  },
   firestore: jest.fn(() => ({
     collection: jest.fn(() => ({
       doc: jest.fn(() => ({

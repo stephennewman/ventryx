@@ -13,9 +13,32 @@ if (!process.env.PLAID_CLIENT_ID) {  // Only load if not already loaded by funct
 
 // Initialize Firebase Admin
 if (!admin.apps.length) {
-  admin.initializeApp({
-    credential: admin.credential.applicationDefault()
-  });
+  try {
+    if (process.env.NODE_ENV === 'production') {
+      admin.initializeApp({
+        credential: admin.credential.applicationDefault()
+      });
+    } else {
+      // For local development and testing
+      try {
+        const serviceAccount = require('../firebase-service-account.json');
+        admin.initializeApp({
+          credential: admin.credential.cert(serviceAccount)
+        });
+      } catch (e) {
+        console.warn('Firebase service account file not found. Some features will be disabled.');
+        admin.initializeApp({
+          // Use a dummy config for local dev if no service account is present
+          projectId: 'dummy-project',
+          credential: admin.credential.applicationDefault()
+        });
+      }
+    }
+    console.log('Firebase Admin initialized successfully');
+  } catch (error) {
+    console.error('Failed to initialize Firebase Admin:', error);
+    // Don't throw - let the app continue without Firebase
+  }
 }
 
 const db = admin.firestore();
@@ -105,13 +128,26 @@ app.post('/api/exchange-token', async (req, res) => {
       public_token: publicToken
     });
     
-    // Store the access token in Firestore
-    const userRef = db.collection('users').doc(userId);
-    await userRef.set({
-      plaidAccessToken: response.data.access_token
-    }, { merge: true });
+    try {
+      // Store the access token in Firestore if available
+      const userRef = db.collection('users').doc(userId);
+      await userRef.set({
+        plaidAccessToken: response.data.access_token
+      }, { merge: true });
+    } catch (dbError) {
+      console.warn('Failed to store access token in Firestore:', dbError);
+      // Continue anyway - the token exchange was successful
+    }
 
-    res.json({ success: true });
+    // Return the access token to the client in development
+    // In production, we never send the access token to the client
+    const responseData = {
+      success: true
+    };
+    if (process.env.NODE_ENV !== 'production') {
+      responseData.accessToken = response.data.access_token;
+    }
+    res.json(responseData);
   } catch (error) {
     console.error('Plaid exchange-token error:', error);
     res.status(500).json({ 
@@ -124,24 +160,52 @@ app.post('/api/exchange-token', async (req, res) => {
 
 app.post('/api/transactions', async (req, res) => {
   try {
-    const { userId } = req.body;
+    const { userId, accessToken } = req.body;
+    console.log('Transactions request received:', { 
+      userId, 
+      hasAccessToken: !!accessToken,
+      requestBody: req.body  // Log the full request body
+    });
+
     if (!userId) {
       return res.status(400).json({ error: 'User ID is required' });
     }
 
-    // If no access token yet, return empty data
-    if (!req.body.access_token) {
+    let access_token = accessToken;  // Use provided access token in development
+    console.log('Initial access token:', !!access_token, typeof access_token);
+
+    if (!access_token && process.env.NODE_ENV === 'production') {
+      try {
+        // In production, get the access token from Firestore
+        const userDoc = await db.collection('users').doc(userId).get();
+        access_token = userDoc.data()?.plaidAccessToken;
+        console.log('Got access token from Firestore:', !!access_token);
+      } catch (dbError) {
+        console.error('Failed to get access token from Firestore:', dbError);
+      }
+    }
+
+    // If no access token available, return empty data
+    if (!access_token) {
+      console.log('No access token available, returning empty data');
       return res.json({
         transactions: [],
         accounts: []
       });
     }
 
+    console.log('Fetching transactions with access token...');
     const response = await plaidClient.transactionsGet({
-      access_token: req.body.access_token,
+      access_token: access_token,
       start_date: '2024-01-01',
       end_date: new Date().toISOString().split('T')[0],
       options: { count: 100, offset: 0 }
+    });
+
+    console.log('Got transactions response:', {
+      numTransactions: response.data.transactions?.length,
+      numAccounts: response.data.accounts?.length,
+      firstTransaction: response.data.transactions?.[0]  // Log the first transaction for debugging
     });
 
     res.json({
@@ -253,7 +317,7 @@ app.use((err, req, res, next) => {
 
 // Start server if running directly (not as a module)
 if (require.main === module) {
-  const PORT = process.env.PORT || 8080;  // Changed default port to 8080 for Cloud Functions
+  const PORT = process.env.PORT || 5176;  // Use environment-specific port configuration
   app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
   });

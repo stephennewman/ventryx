@@ -146,13 +146,15 @@ const App: React.FC = () => {
         throw new Error(errorData.details || 'Failed to exchange token');
       }
 
-      const { access_token } = await exchangeResponse.json();
+      const exchangeData = await exchangeResponse.json();
+      console.log('Exchange response:', exchangeData);
+      const { accessToken } = exchangeData;
       
-      console.log('Fetching transactions...');
+      console.log('Fetching transactions with accessToken:', !!accessToken);
       const transactionsResponse = await fetch(`${API_URL}/transactions`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user.uid, access_token }),
+        body: JSON.stringify({ userId: user.uid, accessToken }),
       });
 
       if (!transactionsResponse.ok) {
@@ -161,6 +163,10 @@ const App: React.FC = () => {
       }
 
       const data = await transactionsResponse.json();
+      console.log('Got transactions response:', {
+        numTransactions: data.transactions?.length,
+        numAccounts: data.accounts?.length
+      });
       setTransactions(data.transactions);
       setAccounts(data.accounts);
     } catch (err) {
