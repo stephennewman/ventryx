@@ -42,7 +42,6 @@ Thumbs.db
 
 # Test files
 test-sms.js
-tests/
 
 # Environment files
 .env.example
