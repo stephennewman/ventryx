@@ -2,6 +2,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Transaction } from '../plaid';
 import ReactMarkdown from 'react-markdown';
 
+const API_URL = `${import.meta.env.VITE_API_URL}/api` || 'http://localhost:5176/api';
+
 interface ChatDrawerProps {
   isOpen: boolean;
   onClose: () => void;
@@ -54,7 +56,7 @@ const ChatDrawer: React.FC<ChatDrawerProps> = ({ isOpen, onClose, transactions }
     setLoading(true);
 
     try {
-      const response = await fetch('http://localhost:5176/api/openai/chat-with-transactions', {
+      const response = await fetch(`${API_URL}/openai/chat-with-transactions`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

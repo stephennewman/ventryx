@@ -11,8 +11,8 @@ const configuration = new Configuration({
   basePath: PlaidEnvironments.sandbox,
   baseOptions: {
     headers: {
-      'PLAID-CLIENT-ID': process.env.VITE_PLAID_CLIENT_ID,
-      'PLAID-SECRET': process.env.VITE_PLAID_SECRET,
+      'PLAID-CLIENT-ID': process.env.PLAID_CLIENT_ID,
+      'PLAID-SECRET': process.env.PLAID_SECRET,
     },
   },
 });
@@ -35,7 +35,7 @@ app.post('/api/create-link-token', async (req, res) => {
   }
 });
 
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 5176;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 }); 

@@ -4,7 +4,7 @@ const path = require('path');
 const { Configuration, PlaidApi, PlaidEnvironments } = require('plaid');
 const { OpenAI } = require('openai');
 const admin = require('firebase-admin');
-require('dotenv').config({ path: path.join(__dirname, '../.env') });
+require('dotenv').config({ path: path.join(__dirname, '../.env.development') });
 
 const app = express();
 
@@ -18,8 +18,8 @@ app.use(cors({
 app.use(express.json());
 
 // Verify environment variables
-console.log('Plaid Client ID:', process.env.VITE_PLAID_CLIENT_ID ? 'Present' : 'Missing');
-console.log('Plaid Secret:', process.env.VITE_PLAID_SECRET ? 'Present' : 'Missing');
+console.log('Plaid Client ID:', process.env.PLAID_CLIENT_ID ? 'Present' : 'Missing');
+console.log('Plaid Secret:', process.env.PLAID_SECRET ? 'Present' : 'Missing');
 console.log('OpenAI API Key:', process.env.OPENAI_API_KEY ? 'Present' : 'Missing');
 
 // Plaid client setup
@@ -27,8 +27,8 @@ const configuration = new Configuration({
   basePath: PlaidEnvironments.sandbox,
   baseOptions: {
     headers: {
-      'PLAID-CLIENT-ID': process.env.VITE_PLAID_CLIENT_ID,
-      'PLAID-SECRET': process.env.VITE_PLAID_SECRET,
+      'PLAID-CLIENT-ID': process.env.PLAID_CLIENT_ID,
+      'PLAID-SECRET': process.env.PLAID_SECRET,
     },
   },
 });
@@ -66,24 +66,55 @@ app.post('/api/create-link-token', async (req, res) => {
 
 app.post('/api/exchange-token', async (req, res) => {
   try {
-    const { public_token } = req.body;
-    if (!public_token) throw new Error('Public token is required');
+    const { publicToken, userId } = req.body;
+    if (!publicToken) {
+      return res.status(400).json({ error: 'Public token is required' });
+    }
+    if (!userId) {
+      return res.status(400).json({ error: 'User ID is required' });
+    }
 
-    const response = await plaidClient.itemPublicTokenExchange({ public_token });
-    res.json({ access_token: response.data.access_token });
+    console.log('Exchanging public token for access token...');
+    const response = await plaidClient.itemPublicTokenExchange({
+      public_token: publicToken
+    });
+
+    console.log('Successfully exchanged token');
+    
+    // Here you would typically store the access_token in your database
+    // associated with the userId
+    
+    res.json({ 
+      access_token: response.data.access_token,
+      item_id: response.data.item_id
+    });
   } catch (error) {
     console.error('Plaid exchange-token error:', error);
-    res.status(500).json({ error: 'Failed to exchange token', details: error.message });
+    res.status(500).json({ 
+      error: 'Failed to exchange token', 
+      details: error.message,
+      type: error.type
+    });
   }
 });
 
 app.post('/api/transactions', async (req, res) => {
   try {
-    const { access_token } = req.body;
-    if (!access_token) throw new Error('Access token is required');
+    const { userId } = req.body;
+    if (!userId) {
+      return res.status(400).json({ error: 'User ID is required' });
+    }
+
+    // If no access token yet, return empty data
+    if (!req.body.access_token) {
+      return res.json({
+        transactions: [],
+        accounts: []
+      });
+    }
 
     const response = await plaidClient.transactionsGet({
-      access_token,
+      access_token: req.body.access_token,
       start_date: '2024-01-01',
       end_date: new Date().toISOString().split('T')[0],
       options: { count: 100, offset: 0 }

@@ -86,7 +86,7 @@ Format the response with:
 Keep the tone friendly and focus on actionable opportunities to save money or get better value.`
       }];
 
-      const response = await fetch('http://localhost:5176/api/openai/chat-with-transactions', {
+      const response = await fetch(`${API_URL}/openai/chat-with-transactions`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
