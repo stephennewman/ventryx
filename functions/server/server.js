@@ -7,8 +7,31 @@ const admin = require('firebase-admin');
 
 // Load environment variables based on NODE_ENV
 if (!process.env.PLAID_CLIENT_ID) {  // Only load if not already loaded by functions
+  process.env.NODE_ENV = process.env.NODE_ENV || 'development';
   const envFile = process.env.NODE_ENV === 'production' ? '.env.production' : '.env.development';
-  require('dotenv').config({ path: path.join(__dirname, '..', envFile) });
+  
+  // Try different paths for the env file
+  const possiblePaths = [
+    path.resolve(__dirname, '..', '..', envFile),  // From functions/server/server.js to root
+    path.resolve(__dirname, '..', envFile),        // From functions/server/server.js to functions
+    path.resolve(__dirname, envFile),              // In the same directory
+  ];
+
+  let envLoaded = false;
+  for (const envPath of possiblePaths) {
+    try {
+      require('dotenv').config({ path: envPath });
+      console.log(`Loaded environment from: ${envPath}`);
+      envLoaded = true;
+      break;
+    } catch (e) {
+      console.log(`Could not load environment from: ${envPath}`);
+    }
+  }
+
+  if (!envLoaded) {
+    console.warn('Could not load environment file from any location');
+  }
 }
 
 // Initialize Firebase Admin
@@ -21,10 +44,31 @@ if (!admin.apps.length) {
     } else {
       // For local development and testing
       try {
-        const serviceAccount = require('../firebase-service-account.json');
-        admin.initializeApp({
-          credential: admin.credential.cert(serviceAccount)
-        });
+        // Try different paths for the service account file
+        let serviceAccount;
+        const possiblePaths = [
+          path.resolve(__dirname, '..', '..', 'firebase-service-account.json'),
+          path.resolve(__dirname, '..', 'firebase-service-account.json'),
+          path.resolve(__dirname, 'firebase-service-account.json')
+        ];
+
+        for (const filePath of possiblePaths) {
+          try {
+            serviceAccount = require(filePath);
+            console.log(`Loaded service account from: ${filePath}`);
+            break;
+          } catch (e) {
+            console.log(`Could not load service account from: ${filePath}`);
+          }
+        }
+
+        if (serviceAccount) {
+          admin.initializeApp({
+            credential: admin.credential.cert(serviceAccount)
+          });
+        } else {
+          throw new Error('Service account file not found');
+        }
       } catch (e) {
         console.warn('Firebase service account file not found. Some features will be disabled.');
         admin.initializeApp({
@@ -545,7 +589,7 @@ app.use((err, req, res, next) => {
 
 // Start server if running directly (not as a module)
 if (require.main === module) {
-  const PORT = process.env.PORT || 5176;
+  const PORT = process.env.PORT || 8080;  // Default to 8080 for Cloud Run
   app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
   });

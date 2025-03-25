@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "vite --mode development",
+    "dev": "node functions/server/server.js",
     "build": "vite build --mode production",
     "preview": "vite preview",
     "test": "jest",
