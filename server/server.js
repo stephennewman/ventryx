@@ -253,7 +253,7 @@ app.use((err, req, res, next) => {
 
 // Start server if running directly (not as a module)
 if (require.main === module) {
-  const PORT = process.env.PORT || 5176;
+  const PORT = process.env.PORT || 5176;  // Use environment-specific port configuration
   app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
   });
