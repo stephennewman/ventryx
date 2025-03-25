@@ -8,6 +8,8 @@
  */
 
 const {onRequest} = require("firebase-functions/v2/https");
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '..', '.env.production') });
 const app = require("../server/server");
 
 exports.api = onRequest(

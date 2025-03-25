@@ -6,8 +6,10 @@ const { OpenAI } = require('openai');
 const admin = require('firebase-admin');
 
 // Load environment variables based on NODE_ENV
-const envFile = process.env.NODE_ENV === 'production' ? '.env' : '.env.development';
-require('dotenv').config({ path: path.join(__dirname, '..', envFile) });
+if (!process.env.PLAID_CLIENT_ID) {  // Only load if not already loaded by functions
+  const envFile = process.env.NODE_ENV === 'production' ? '.env.production' : '.env.development';
+  require('dotenv').config({ path: path.join(__dirname, '..', envFile) });
+}
 
 // Initialize Firebase Admin
 if (!admin.apps.length) {
