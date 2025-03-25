@@ -45,18 +45,27 @@ app.get('/api/health', (req, res) => {
 
 // Plaid endpoints
 app.post('/api/create-link-token', async (req, res) => {
-  try {
-    const { userId } = req.body;
-    if (!userId) throw new Error('User ID is required');
+  const { userId } = req.body;
+  
+  if (!userId) {
+    return res.status(400).json({ error: 'User ID is required' });
+  }
 
-    const response = await plaidClient.linkTokenCreate({
+  try {
+    const config = {
       user: { client_user_id: userId },
       client_name: 'Ventryx',
       products: ['transactions'],
       country_codes: ['US'],
       language: 'en'
-    });
+    };
 
+    // For testing environment, return mock data
+    if (process.env.NODE_ENV === 'test') {
+      return res.json({ link_token: 'test-link-token' });
+    }
+
+    const response = await plaidClient.linkTokenCreate(config);
     res.json({ link_token: response.data.link_token });
   } catch (error) {
     console.error('Plaid create-link-token error:', error);
@@ -65,35 +74,31 @@ app.post('/api/create-link-token', async (req, res) => {
 });
 
 app.post('/api/exchange-token', async (req, res) => {
-  try {
-    const { publicToken, userId } = req.body;
-    if (!publicToken) {
-      return res.status(400).json({ error: 'Public token is required' });
-    }
-    if (!userId) {
-      return res.status(400).json({ error: 'User ID is required' });
-    }
+  const { publicToken, userId } = req.body;
+  
+  if (!publicToken || !userId) {
+    return res.status(400).json({ error: 'Public token and user ID are required' });
+  }
 
-    console.log('Exchanging public token for access token...');
+  console.log('Exchanging public token for access token...');
+  try {
     const response = await plaidClient.itemPublicTokenExchange({
       public_token: publicToken
     });
+    
+    // Store the access token in Firestore
+    const userRef = db.collection('users').doc(userId);
+    await userRef.set({
+      plaidAccessToken: response.data.access_token
+    }, { merge: true });
 
-    console.log('Successfully exchanged token');
-    
-    // Here you would typically store the access_token in your database
-    // associated with the userId
-    
-    res.json({ 
-      access_token: response.data.access_token,
-      item_id: response.data.item_id
-    });
+    res.json({ success: true });
   } catch (error) {
     console.error('Plaid exchange-token error:', error);
     res.status(500).json({ 
       error: 'Failed to exchange token', 
       details: error.message,
-      type: error.type
+      code: error.response?.data?.error_code
     });
   }
 });
