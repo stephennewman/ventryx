@@ -16,7 +16,13 @@ exports.api = onRequest(
       region: "us-central1",
       invoker: "public",
       cors: {
-        origin: ["https://get.krezzo.com", "https://api.get.krezzo.com", "http://localhost:5173", "http://localhost:5176"],
+        origin: [
+          "https://ventryx.netlify.app",
+          "https://ventryx.com",
+          "https://www.ventryx.com",
+          "http://localhost:5173",
+          "http://localhost:5176"
+        ],
         methods: ["GET", "POST", "OPTIONS"],
         allowHeaders: [
           "Content-Type",
@@ -24,8 +30,11 @@ exports.api = onRequest(
           "X-Requested-With",
           "Accept",
           "Origin",
+          "PLAID-CLIENT-ID",
+          "PLAID-SECRET"
         ],
         maxAge: 86400,
+        credentials: true
       },
     },
     app,

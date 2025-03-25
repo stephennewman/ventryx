@@ -4,15 +4,32 @@ const path = require('path');
 const { Configuration, PlaidApi, PlaidEnvironments } = require('plaid');
 const { OpenAI } = require('openai');
 const admin = require('firebase-admin');
-require('dotenv').config({ path: path.join(__dirname, '../.env.development') });
+
+// Load environment variables based on NODE_ENV
+const envFile = process.env.NODE_ENV === 'production' ? '.env' : '.env.development';
+require('dotenv').config({ path: path.join(__dirname, '..', envFile) });
+
+// Initialize Firebase Admin
+if (!admin.apps.length) {
+  admin.initializeApp({
+    credential: admin.credential.applicationDefault()
+  });
+}
+
+const db = admin.firestore();
 
 const app = express();
 
 app.use(cors({
-  origin: ['http://localhost:5173', 'https://ventryx.netlify.app'],
+  origin: [
+    'http://localhost:5173',
+    'https://ventryx.netlify.app',
+    'https://ventryx.com',
+    'https://www.ventryx.com'
+  ],
   methods: ['GET', 'POST', 'OPTIONS'],
   credentials: true,
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization', 'PLAID-CLIENT-ID', 'PLAID-SECRET']
 }));
 
 app.use(express.json());
@@ -22,9 +39,9 @@ console.log('Plaid Client ID:', process.env.PLAID_CLIENT_ID ? 'Present' : 'Missi
 console.log('Plaid Secret:', process.env.PLAID_SECRET ? 'Present' : 'Missing');
 console.log('OpenAI API Key:', process.env.OPENAI_API_KEY ? 'Present' : 'Missing');
 
-// Plaid client setup
+// Plaid client setup with environment-specific configuration
 const configuration = new Configuration({
-  basePath: PlaidEnvironments.sandbox,
+  basePath: process.env.NODE_ENV === 'production' ? PlaidEnvironments.production : PlaidEnvironments.sandbox,
   baseOptions: {
     headers: {
       'PLAID-CLIENT-ID': process.env.PLAID_CLIENT_ID,
