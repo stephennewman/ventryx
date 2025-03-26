@@ -3,13 +3,14 @@ import { Link } from 'react-router-dom';
 
 const PrivacyPolicy: React.FC = () => {
   return (
-    <div className="min-h-screen bg-gray-100 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-white via-blue-50 to-purple-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-3xl mx-auto">
         <div className="mb-8 flex justify-center">
           <img
-            src="https://s3.ca-central-1.amazonaws.com/logojoy/logos/215772753/noBgColor.png?19117.199999999255"
-            alt="Ventryx Logo"
-            className="h-12 w-auto"
+            src="https://blog.krezzo.com/hs-fs/hubfs/Krezzo-Logo-2023-Light.png?width=3248&height=800&name=Krezzo-Logo-2023-Light.png"
+            alt="Krezzo Logo"
+            className="mx-auto mb-2"
+            style={{ width: '200px', height: 'auto' }}
           />
         </div>
         

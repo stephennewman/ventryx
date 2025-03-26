@@ -331,7 +331,7 @@ const App: React.FC = () => {
           <div className="flex flex-col items-center mt-8 space-y-4">
             <button 
               onClick={signInWithGoogle}
-              className="bg-blue-600 text-white border py-2 px-6 rounded-lg hover:bg-blue-700 transition-colors"
+              className="font-semibold px-6 py-3 rounded-lg shadow text-white bg-gradient-to-r from-purple-500 via-pink-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Sign up with Google
             </button>
@@ -342,17 +342,17 @@ const App: React.FC = () => {
             </div>
             <button 
               onClick={signInWithGoogle} 
-              className="bg-white border py-2 px-6 rounded-lg hover:bg-gray-50 transition-colors"
+              className="border border-purple-200 bg-white py-2 px-6 rounded-lg hover:bg-purple-50 transition-colors font-medium"
             >
               Sign in with Google
             </button>
             <p className="text-sm text-gray-500 mt-4">
               By signing up, you agree to our{' '}
-              <Link to="/terms-of-service" className="text-blue-600 hover:text-blue-800">
+              <Link to="/terms-of-service" className="text-purple-600 hover:text-purple-800">
                 Terms of Service
               </Link>{' '}
               and{' '}
-              <Link to="/privacy-policy" className="text-blue-600 hover:text-blue-800">
+              <Link to="/privacy-policy" className="text-purple-600 hover:text-purple-800">
                 Privacy Policy
               </Link>
             </p>
