@@ -3,7 +3,7 @@
   publish = "dist"
 
 [build.environment]
-  NODE_VERSION = "20.5.0"
+  NODE_VERSION = "20.9.0"
   NODE_ENV = "production"
   NPM_FLAGS = "--no-optional"
 
