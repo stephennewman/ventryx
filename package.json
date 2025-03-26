@@ -7,7 +7,7 @@
     "dev": "concurrently \"npm run backend\" \"npm run frontend\"",
     "backend": "node functions/server/server.js",
     "frontend": "vite",
-    "build": "vite build --mode production",
+    "build": "vite build --mode production --debug",
     "netlify:build": "npm install vite@6.2.2 @vitejs/plugin-react --no-save && npx vite build --config vite.config.js --mode production",
     "preview": "vite preview",
     "test": "jest",
