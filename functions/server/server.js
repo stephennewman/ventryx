@@ -85,18 +85,23 @@ if (!admin.apps.length) {
   }
 }
 
-const db = admin.firestore();
-
+// Create the Express app instance
 const app = express();
 
-// Add base path middleware for Firebase Functions
-app.use((req, res, next) => {
-  if (process.env.NODE_ENV === 'production' && !req.path.startsWith('/api/')) {
-    req.url = `/api${req.url}`;
-  }
-  next();
-});
+// Only add the rewriting middleware if not running as a Firebase function
+if (!process.env.FUNCTION_TARGET) {
+  app.use((req, res, next) => {
+    if (process.env.NODE_ENV === 'production' && !req.path.startsWith('/api/')) {
+      req.url = `/api${req.url}`;
+    }
+    next();
+  });
+}
 
+// Set up Firestore database reference
+const db = admin.firestore();
+
+// Configure CORS and JSON parsing
 app.use(cors({
   origin: [
     'http://localhost:5173',
@@ -108,7 +113,6 @@ app.use(cors({
   credentials: true,
   allowedHeaders: ['Content-Type', 'Authorization', 'PLAID-CLIENT-ID', 'PLAID-SECRET']
 }));
-
 app.use(express.json());
 
 // Verify environment variables
@@ -126,7 +130,6 @@ const configuration = new Configuration({
     },
   },
 });
-
 const plaidClient = new PlaidApi(configuration);
 
 // OpenAI setup
@@ -143,10 +146,7 @@ app.get('/api/health', (req, res) => {
 // Plaid endpoints (both with and without /api prefix)
 app.post('/create-link-token', async (req, res) => {
   const { userId } = req.body;
-  
-  if (!userId) {
-    return res.status(400).json({ error: 'User ID is required' });
-  }
+  if (!userId) return res.status(400).json({ error: 'User ID is required' });
 
   try {
     const config = {
@@ -157,7 +157,6 @@ app.post('/create-link-token', async (req, res) => {
       language: 'en'
     };
 
-    // For testing environment, return mock data
     if (process.env.NODE_ENV === 'test') {
       return res.json({ link_token: 'test-link-token' });
     }
@@ -170,11 +169,9 @@ app.post('/create-link-token', async (req, res) => {
   }
 });
 app.post('/api/create-link-token', async (req, res) => {
+  // Same as above endpoint duplication for /api prefix
   const { userId } = req.body;
-  
-  if (!userId) {
-    return res.status(400).json({ error: 'User ID is required' });
-  }
+  if (!userId) return res.status(400).json({ error: 'User ID is required' });
 
   try {
     const config = {
@@ -185,7 +182,6 @@ app.post('/api/create-link-token', async (req, res) => {
       language: 'en'
     };
 
-    // For testing environment, return mock data
     if (process.env.NODE_ENV === 'test') {
       return res.json({ link_token: 'test-link-token' });
     }
@@ -200,33 +196,19 @@ app.post('/api/create-link-token', async (req, res) => {
 
 app.post('/exchange-token', async (req, res) => {
   const { publicToken, userId } = req.body;
-  
-  if (!publicToken || !userId) {
-    return res.status(400).json({ error: 'Public token and user ID are required' });
-  }
+  if (!publicToken || !userId) return res.status(400).json({ error: 'Public token and user ID are required' });
 
   console.log('Exchanging public token for access token...');
   try {
-    const response = await plaidClient.itemPublicTokenExchange({
-      public_token: publicToken
-    });
-    
+    const response = await plaidClient.itemPublicTokenExchange({ public_token: publicToken });
     try {
-      // Store the access token in Firestore if available
       const userRef = db.collection('users').doc(userId);
-      await userRef.set({
-        plaidAccessToken: response.data.access_token
-      }, { merge: true });
+      await userRef.set({ plaidAccessToken: response.data.access_token }, { merge: true });
     } catch (dbError) {
       console.warn('Failed to store access token in Firestore:', dbError);
-      // Continue anyway - the token exchange was successful
     }
 
-    // Return the access token to the client in development
-    // In production, we never send the access token to the client
-    const responseData = {
-      success: true
-    };
+    const responseData = { success: true };
     if (process.env.NODE_ENV !== 'production') {
       responseData.accessToken = response.data.access_token;
     }
@@ -241,34 +223,21 @@ app.post('/exchange-token', async (req, res) => {
   }
 });
 app.post('/api/exchange-token', async (req, res) => {
+  // Duplicate of /exchange-token endpoint for /api prefix
   const { publicToken, userId } = req.body;
-  
-  if (!publicToken || !userId) {
-    return res.status(400).json({ error: 'Public token and user ID are required' });
-  }
+  if (!publicToken || !userId) return res.status(400).json({ error: 'Public token and user ID are required' });
 
   console.log('Exchanging public token for access token...');
   try {
-    const response = await plaidClient.itemPublicTokenExchange({
-      public_token: publicToken
-    });
-    
+    const response = await plaidClient.itemPublicTokenExchange({ public_token: publicToken });
     try {
-      // Store the access token in Firestore if available
       const userRef = db.collection('users').doc(userId);
-      await userRef.set({
-        plaidAccessToken: response.data.access_token
-      }, { merge: true });
+      await userRef.set({ plaidAccessToken: response.data.access_token }, { merge: true });
     } catch (dbError) {
       console.warn('Failed to store access token in Firestore:', dbError);
-      // Continue anyway - the token exchange was successful
     }
 
-    // Return the access token to the client in development
-    // In production, we never send the access token to the client
-    const responseData = {
-      success: true
-    };
+    const responseData = { success: true };
     if (process.env.NODE_ENV !== 'production') {
       responseData.accessToken = response.data.access_token;
     }
@@ -286,22 +255,14 @@ app.post('/api/exchange-token', async (req, res) => {
 app.post('/transactions', async (req, res) => {
   try {
     const { userId, accessToken } = req.body;
-    console.log('Transactions request received:', { 
-      userId, 
-      hasAccessToken: !!accessToken,
-      requestBody: req.body  // Log the full request body
-    });
+    console.log('Transactions request received:', { userId, hasAccessToken: !!accessToken, requestBody: req.body });
+    if (!userId) return res.status(400).json({ error: 'User ID is required' });
 
-    if (!userId) {
-      return res.status(400).json({ error: 'User ID is required' });
-    }
-
-    let access_token = accessToken;  // Use provided access token in development
+    let access_token = accessToken;
     console.log('Initial access token:', !!access_token, typeof access_token);
 
     if (!access_token && process.env.NODE_ENV === 'production') {
       try {
-        // In production, get the access token from Firestore
         const userDoc = await db.collection('users').doc(userId).get();
         access_token = userDoc.data()?.plaidAccessToken;
         console.log('Got access token from Firestore:', !!access_token);
@@ -309,30 +270,23 @@ app.post('/transactions', async (req, res) => {
         console.error('Failed to get access token from Firestore:', dbError);
       }
     }
-
-    // If no access token available, return empty data
     if (!access_token) {
       console.log('No access token available, returning empty data');
-      return res.json({
-        transactions: [],
-        accounts: []
-      });
+      return res.json({ transactions: [], accounts: [] });
     }
 
     console.log('Fetching transactions with access token...');
     const response = await plaidClient.transactionsGet({
-      access_token: access_token,
+      access_token,
       start_date: '2024-01-01',
       end_date: new Date().toISOString().split('T')[0],
       options: { count: 100, offset: 0 }
     });
-
     console.log('Got transactions response:', {
       numTransactions: response.data.transactions?.length,
       numAccounts: response.data.accounts?.length,
-      firstTransaction: response.data.transactions?.[0]  // Log the first transaction for debugging
+      firstTransaction: response.data.transactions?.[0]
     });
-
     res.json({
       transactions: response.data.transactions,
       accounts: response.data.accounts
@@ -343,24 +297,17 @@ app.post('/transactions', async (req, res) => {
   }
 });
 app.post('/api/transactions', async (req, res) => {
+  // Duplicate of /transactions endpoint for /api prefix
   try {
     const { userId, accessToken } = req.body;
-    console.log('Transactions request received:', { 
-      userId, 
-      hasAccessToken: !!accessToken,
-      requestBody: req.body  // Log the full request body
-    });
+    console.log('Transactions request received:', { userId, hasAccessToken: !!accessToken, requestBody: req.body });
+    if (!userId) return res.status(400).json({ error: 'User ID is required' });
 
-    if (!userId) {
-      return res.status(400).json({ error: 'User ID is required' });
-    }
-
-    let access_token = accessToken;  // Use provided access token in development
+    let access_token = accessToken;
     console.log('Initial access token:', !!access_token, typeof access_token);
 
     if (!access_token && process.env.NODE_ENV === 'production') {
       try {
-        // In production, get the access token from Firestore
         const userDoc = await db.collection('users').doc(userId).get();
         access_token = userDoc.data()?.plaidAccessToken;
         console.log('Got access token from Firestore:', !!access_token);
@@ -368,30 +315,23 @@ app.post('/api/transactions', async (req, res) => {
         console.error('Failed to get access token from Firestore:', dbError);
       }
     }
-
-    // If no access token available, return empty data
     if (!access_token) {
       console.log('No access token available, returning empty data');
-      return res.json({
-        transactions: [],
-        accounts: []
-      });
+      return res.json({ transactions: [], accounts: [] });
     }
 
     console.log('Fetching transactions with access token...');
     const response = await plaidClient.transactionsGet({
-      access_token: access_token,
+      access_token,
       start_date: '2024-01-01',
       end_date: new Date().toISOString().split('T')[0],
       options: { count: 100, offset: 0 }
     });
-
     console.log('Got transactions response:', {
       numTransactions: response.data.transactions?.length,
       numAccounts: response.data.accounts?.length,
-      firstTransaction: response.data.transactions?.[0]  // Log the first transaction for debugging
+      firstTransaction: response.data.transactions?.[0]
     });
-
     res.json({
       transactions: response.data.transactions,
       accounts: response.data.accounts
@@ -402,7 +342,7 @@ app.post('/api/transactions', async (req, res) => {
   }
 });
 
-// ✅ OpenAI chat endpoint clearly integrated
+// OpenAI chat endpoints
 app.post('/openai/chat', async (req, res) => {
   const { prompt } = req.body;
   try {
@@ -410,7 +350,6 @@ app.post('/openai/chat', async (req, res) => {
       messages: [{ role: "user", content: prompt }],
       model: "gpt-4"
     });
-
     res.json({ reply: completion.choices[0].message.content });
   } catch (error) {
     console.error('OpenAI error:', error);
@@ -418,13 +357,13 @@ app.post('/openai/chat', async (req, res) => {
   }
 });
 app.post('/api/openai/chat', async (req, res) => {
+  // Duplicate for /api prefix
   const { prompt } = req.body;
   try {
     const completion = await openai.chat.completions.create({
       messages: [{ role: "user", content: prompt }],
       model: "gpt-4"
     });
-
     res.json({ reply: completion.choices[0].message.content });
   } catch (error) {
     console.error('OpenAI error:', error);
@@ -434,16 +373,10 @@ app.post('/api/openai/chat', async (req, res) => {
 
 app.post('/openai/chat-with-transactions', async (req, res) => {
   const { messages, transactions } = req.body;
-
-  // Validate input
   if (!Array.isArray(messages) || !Array.isArray(transactions)) {
-    return res.status(400).json({
-      error: 'messages and transactions are required and must be arrays',
-    });
+    return res.status(400).json({ error: 'messages and transactions are required and must be arrays' });
   }
-
   try {
-    // System prompt for the AI assistant
     const systemPrompt = `
 You are a helpful financial assistant. You have access to a user's transaction history and help answer questions, analyze spending, and forecast budgets.
 
@@ -461,63 +394,38 @@ Only reference the data if the prompt relates to transactions or spending.
 If the user's message is conversational or general, respond appropriately without referencing their data.
     `.trim();
 
-    // Format transaction data for context
     const formattedTransactions = transactions.map(txn => ({
       date: txn.date,
       name: txn.name,
       amount: txn.amount,
-      category: txn.category?.[0] || 'Uncategorized',
+      category: txn.category?.[0] || 'Uncategorized'
     }));
     const dataString = JSON.stringify(formattedTransactions, null, 2);
-
-    // Last message from the user
     const lastUserMessage = messages.slice().reverse().find(msg => msg.role === 'user')?.content || '';
-
-    // Check if the message is related to spending
     const financialKeywords = /spend|purchase|cost|transaction|budget|buy|bought|amount|paid|expense|Uber|Starbucks|total/i;
     const shouldInjectData = financialKeywords.test(lastUserMessage);
-
-    // Compose final messages
-    const finalMessages = [
-      { role: 'system', content: systemPrompt },
-      ...messages,
-    ];
-
+    const finalMessages = [{ role: 'system', content: systemPrompt }, ...messages];
     if (shouldInjectData) {
-      finalMessages.push({
-        role: 'user',
-        content: `Here are the user's transactions:\n${dataString}`,
-      });
+      finalMessages.push({ role: 'user', content: `Here are the user's transactions:\n${dataString}` });
     }
-
-    // Send to OpenAI
     const completion = await openai.chat.completions.create({
       model: 'gpt-4',
       messages: finalMessages,
-      temperature: 0.7,
+      temperature: 0.7
     });
-
     res.json({ message: completion.choices[0].message.content });
   } catch (error) {
     console.error('🧠 OpenAI chat error:', error);
-    res.status(500).json({
-      error: 'Failed to generate a response',
-      details: error.message,
-    });
+    res.status(500).json({ error: 'Failed to generate a response', details: error.message });
   }
 });
 app.post('/api/openai/chat-with-transactions', async (req, res) => {
+  // Duplicate for /api prefix
   const { messages, transactions } = req.body;
-
-  // Validate input
   if (!Array.isArray(messages) || !Array.isArray(transactions)) {
-    return res.status(400).json({
-      error: 'messages and transactions are required and must be arrays',
-    });
+    return res.status(400).json({ error: 'messages and transactions are required and must be arrays' });
   }
-
   try {
-    // System prompt for the AI assistant
     const systemPrompt = `
 You are a helpful financial assistant. You have access to a user's transaction history and help answer questions, analyze spending, and forecast budgets.
 
@@ -535,49 +443,29 @@ Only reference the data if the prompt relates to transactions or spending.
 If the user's message is conversational or general, respond appropriately without referencing their data.
     `.trim();
 
-    // Format transaction data for context
     const formattedTransactions = transactions.map(txn => ({
       date: txn.date,
       name: txn.name,
       amount: txn.amount,
-      category: txn.category?.[0] || 'Uncategorized',
+      category: txn.category?.[0] || 'Uncategorized'
     }));
     const dataString = JSON.stringify(formattedTransactions, null, 2);
-
-    // Last message from the user
     const lastUserMessage = messages.slice().reverse().find(msg => msg.role === 'user')?.content || '';
-
-    // Check if the message is related to spending
     const financialKeywords = /spend|purchase|cost|transaction|budget|buy|bought|amount|paid|expense|Uber|Starbucks|total/i;
     const shouldInjectData = financialKeywords.test(lastUserMessage);
-
-    // Compose final messages
-    const finalMessages = [
-      { role: 'system', content: systemPrompt },
-      ...messages,
-    ];
-
+    const finalMessages = [{ role: 'system', content: systemPrompt }, ...messages];
     if (shouldInjectData) {
-      finalMessages.push({
-        role: 'user',
-        content: `Here are the user's transactions:\n${dataString}`,
-      });
+      finalMessages.push({ role: 'user', content: `Here are the user's transactions:\n${dataString}` });
     }
-
-    // Send to OpenAI
     const completion = await openai.chat.completions.create({
       model: 'gpt-4',
       messages: finalMessages,
-      temperature: 0.7,
+      temperature: 0.7
     });
-
     res.json({ message: completion.choices[0].message.content });
   } catch (error) {
     console.error('🧠 OpenAI chat error:', error);
-    res.status(500).json({
-      error: 'Failed to generate a response',
-      details: error.message,
-    });
+    res.status(500).json({ error: 'Failed to generate a response', details: error.message });
   }
 });
 
@@ -589,7 +477,7 @@ app.use((err, req, res, next) => {
 
 // Start server if running directly (not as a module)
 if (require.main === module) {
-  const PORT = process.env.PORT || 8080;  // Default to 8080 for Cloud Run
+  const PORT = process.env.PORT || 8080;  // Default to 8080 for Cloud Run or other production environments
   app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
   });
