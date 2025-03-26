@@ -46,7 +46,7 @@ const PostSSOWelcome: React.FC<PostSSOWelcomeProps> = ({ user, onComplete }) => 
   };
 
   return (
-    <div className="max-w-md mx-auto bg-white rounded-lg shadow-lg p-8">
+    <div className="max-w-md mx-auto bg-gradient-to-br from-white via-purple-50 to-blue-50 rounded-lg shadow-lg p-8">
       <div>
         <h2 className="text-center text-2xl font-bold text-gray-900">
           Welcome to Ventryx!
@@ -68,7 +68,7 @@ const PostSSOWelcome: React.FC<PostSSOWelcomeProps> = ({ user, onComplete }) => 
             placeholder="(Recommended)"
             value={phoneNumber}
             onChange={(e) => setPhoneNumber(e.target.value)}
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm"
           />
         </div>
 
@@ -80,13 +80,13 @@ const PostSSOWelcome: React.FC<PostSSOWelcomeProps> = ({ user, onComplete }) => 
               type="checkbox"
               checked={smsConsent}
               onChange={(e) => setSmsConsent(e.target.checked)}
-              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
             />
           </div>
           <div className="ml-3 text-sm">
             <label htmlFor="sms-consent" className="font-medium text-gray-700">
               I agree to receive recurring SMS messages from Ventryx at the number provided. These messages may include transaction alerts, financial insights, and account updates. Message frequency varies. Msg & data rates may apply. Reply STOP to opt out.{' '}
-              <a href="/privacy-policy" className="text-blue-600 hover:text-blue-500">
+              <a href="/privacy-policy" className="text-purple-600 hover:text-purple-500">
                 View our Privacy Policy
               </a>
             </label>
@@ -103,16 +103,16 @@ const PostSSOWelcome: React.FC<PostSSOWelcomeProps> = ({ user, onComplete }) => 
           <button
             type="submit"
             disabled={isSubmitting}
-            className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white ${
-              isSubmitting ? 'bg-blue-400' : 'bg-blue-600 hover:bg-blue-700'
-            } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500`}
+            className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white ${
+              isSubmitting ? 'opacity-70' : ''
+            } bg-gradient-to-r from-purple-500 via-pink-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 transition-all`}
           >
             {isSubmitting ? 'Saving...' : 'Continue'}
           </button>
           <button
             type="button"
             onClick={onComplete}
-            className="w-full text-sm text-gray-500 hover:text-gray-700 mt-4"
+            className="w-full text-sm text-gray-500 hover:text-purple-600 mt-4 transition-colors"
           >
             Skip for now
           </button>
