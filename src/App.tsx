@@ -41,20 +41,30 @@ const App: React.FC = () => {
   const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null);
   const [generatedText, setGeneratedText] = useState<string | null>(null);
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [userStateLoading, setUserStateLoading] = useState(true);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      setUser(currentUser);
-      console.log('User state changed:', currentUser ? 'Signed in' : 'Signed out');
-      
-      if (currentUser) {
-        console.log('Profile Image URL:', currentUser.photoURL);
-        scrollToTop();
+      try {
+        setUserStateLoading(true);
         
-        // Check if user has completed onboarding
-        const db = getFirestore();
-        const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
-        setHasCompletedOnboarding(userDoc.exists());
+        if (currentUser) {
+          setUser(currentUser);
+          console.log('Profile Image URL:', currentUser.photoURL);
+          scrollToTop();
+          
+          // Check if user has completed onboarding
+          const db = getFirestore();
+          const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+          setHasCompletedOnboarding(userDoc.exists());
+        } else {
+          setUser(null);
+          setHasCompletedOnboarding(false);
+        }
+      } catch (error) {
+        console.error("Error checking user state:", error);
+      } finally {
+        setUserStateLoading(false);
       }
     });
 
@@ -191,7 +201,12 @@ const App: React.FC = () => {
           />
         </div>
 
-        {user ? (
+        {userStateLoading ? (
+          <div className="text-center py-8">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+            <p className="mt-4 text-gray-600"> </p>
+          </div>
+        ) : user ? (
           hasCompletedOnboarding ? (
             <div className="space-y-6">
               <div className="bg-white rounded-lg shadow p-6">
