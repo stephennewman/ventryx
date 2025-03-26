@@ -121,20 +121,47 @@ console.log('Plaid Client ID:', process.env.PLAID_CLIENT_ID ? 'Present' : 'Missi
 console.log('Plaid Secret:', process.env.PLAID_SECRET ? 'Present' : 'Missing');
 console.log('OpenAI API Key:', process.env.OPENAI_API_KEY ? 'Present' : 'Missing');
 
+// Get environment variables for credentials, prioritizing Firebase environment variables
+// FALLBACK VALUES FOR PRODUCTION - Replace with environment variables in Cloud Console!
+let plaidClientId = process.env.PLAID_CLIENT_ID || '67cc77c4a291e80023d19b3c';
+let plaidSecret = process.env.PLAID_SECRET || '6b44b731a9bc537a36befba5fcbe77';
+let openaiApiKey = process.env.OPENAI_API_KEY;
+
+// If running in Firebase Functions environment, it should already have these environment variables
+// set from the Firebase console or deployment config
+if (process.env.FUNCTION_TARGET) {
+  console.log('Running in Firebase Functions environment, using environment variables directly');
+  // Firebase Functions v2 uses environment variables directly
+  console.log('Environment variables in Firebase Functions:', {
+    hasPlaidId: !!process.env.PLAID_CLIENT_ID,
+    hasPlaidSecret: !!process.env.PLAID_SECRET,
+    hasOpenAIKey: !!process.env.OPENAI_API_KEY
+  });
+}
+
 // Plaid client setup with environment-specific configuration
 const configuration = new Configuration({
-  basePath: process.env.NODE_ENV === 'production' ? PlaidEnvironments.production : PlaidEnvironments.sandbox,
+  basePath: PlaidEnvironments.sandbox, // Always use sandbox for testing
   baseOptions: {
     headers: {
-      'PLAID-CLIENT-ID': process.env.PLAID_CLIENT_ID,
-      'PLAID-SECRET': process.env.PLAID_SECRET,
+      'PLAID-CLIENT-ID': plaidClientId,
+      'PLAID-SECRET': plaidSecret,
+      'Content-Type': 'application/json',
     },
   },
 });
+
+// Log the actual headers being sent to Plaid
+console.log('Plaid API Headers:', {
+  'PLAID-CLIENT-ID': plaidClientId ? plaidClientId.substring(0, 5) + '...' : 'Not Set',
+  'PLAID-SECRET': plaidSecret ? plaidSecret.substring(0, 5) + '...' : 'Not Set',
+  basePath: PlaidEnvironments.sandbox
+});
+
 const plaidClient = new PlaidApi(configuration);
 
 // OpenAI setup
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const openai = new OpenAI({ apiKey: openaiApiKey });
 
 // Health check endpoints (both with and without /api prefix)
 app.get('/health', (req, res) => {
@@ -162,8 +189,19 @@ app.post('/create-link-token', async (req, res) => {
       return res.json({ link_token: 'test-link-token' });
     }
 
-    const response = await plaidClient.linkTokenCreate(config);
-    res.json({ link_token: response.data.link_token });
+    // Use fetch instead of the Plaid SDK
+    const response = await fetch('https://sandbox.plaid.com/link/token/create', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'PLAID-CLIENT-ID': plaidClientId,
+        'PLAID-SECRET': plaidSecret,
+      },
+      body: JSON.stringify(config)
+    });
+    
+    const data = await response.json();
+    res.json({ link_token: data.link_token });
   } catch (error) {
     console.error('Plaid create-link-token error:', error);
     res.status(500).json({ error: 'Failed to create link token', details: error.message });
@@ -187,8 +225,19 @@ app.post('/api/create-link-token', async (req, res) => {
       return res.json({ link_token: 'test-link-token' });
     }
 
-    const response = await plaidClient.linkTokenCreate(config);
-    res.json({ link_token: response.data.link_token });
+    // Use fetch instead of the Plaid SDK
+    const response = await fetch('https://sandbox.plaid.com/link/token/create', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'PLAID-CLIENT-ID': plaidClientId,
+        'PLAID-SECRET': plaidSecret,
+      },
+      body: JSON.stringify(config)
+    });
+    
+    const data = await response.json();
+    res.json({ link_token: data.link_token });
   } catch (error) {
     console.error('Plaid create-link-token error:', error);
     res.status(500).json({ error: 'Failed to create link token', details: error.message });
@@ -201,17 +250,29 @@ app.post('/exchange-token', async (req, res) => {
 
   console.log('Exchanging public token for access token...');
   try {
-    const response = await plaidClient.itemPublicTokenExchange({ public_token: publicToken });
+    // Use fetch instead of the Plaid SDK
+    const response = await fetch('https://sandbox.plaid.com/item/public_token/exchange', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'PLAID-CLIENT-ID': plaidClientId,
+        'PLAID-SECRET': plaidSecret,
+      },
+      body: JSON.stringify({ public_token: publicToken })
+    });
+    
+    const data = await response.json();
+    
     try {
       const userRef = db.collection('users').doc(userId);
-      await userRef.set({ plaidAccessToken: response.data.access_token }, { merge: true });
+      await userRef.set({ plaidAccessToken: data.access_token }, { merge: true });
     } catch (dbError) {
       console.warn('Failed to store access token in Firestore:', dbError);
     }
 
     const responseData = { success: true };
     if (process.env.NODE_ENV !== 'production') {
-      responseData.accessToken = response.data.access_token;
+      responseData.accessToken = data.access_token;
     }
     res.json(responseData);
   } catch (error) {
@@ -230,17 +291,29 @@ app.post('/api/exchange-token', async (req, res) => {
 
   console.log('Exchanging public token for access token...');
   try {
-    const response = await plaidClient.itemPublicTokenExchange({ public_token: publicToken });
+    // Use fetch instead of the Plaid SDK
+    const response = await fetch('https://sandbox.plaid.com/item/public_token/exchange', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'PLAID-CLIENT-ID': plaidClientId,
+        'PLAID-SECRET': plaidSecret,
+      },
+      body: JSON.stringify({ public_token: publicToken })
+    });
+    
+    const data = await response.json();
+    
     try {
       const userRef = db.collection('users').doc(userId);
-      await userRef.set({ plaidAccessToken: response.data.access_token }, { merge: true });
+      await userRef.set({ plaidAccessToken: data.access_token }, { merge: true });
     } catch (dbError) {
       console.warn('Failed to store access token in Firestore:', dbError);
     }
 
     const responseData = { success: true };
     if (process.env.NODE_ENV !== 'production') {
-      responseData.accessToken = response.data.access_token;
+      responseData.accessToken = data.access_token;
     }
     res.json(responseData);
   } catch (error) {
@@ -277,20 +350,36 @@ app.post('/transactions', async (req, res) => {
     }
 
     console.log('Fetching transactions with access token...');
-    const response = await plaidClient.transactionsGet({
-      access_token,
-      start_date: '2024-01-01',
-      end_date: new Date().toISOString().split('T')[0],
-      options: { count: 100, offset: 0 }
+    // Use fetch instead of Plaid SDK
+    const today = new Date();
+    const start_date = '2024-01-01';
+    const end_date = today.toISOString().split('T')[0];
+    
+    const response = await fetch('https://sandbox.plaid.com/transactions/get', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'PLAID-CLIENT-ID': plaidClientId,
+        'PLAID-SECRET': plaidSecret,
+      },
+      body: JSON.stringify({
+        access_token,
+        start_date,
+        end_date,
+        options: { count: 100, offset: 0 }
+      })
     });
+    
+    const data = await response.json();
     console.log('Got transactions response:', {
-      numTransactions: response.data.transactions?.length,
-      numAccounts: response.data.accounts?.length,
-      firstTransaction: response.data.transactions?.[0]
+      numTransactions: data.transactions?.length,
+      numAccounts: data.accounts?.length,
+      firstTransaction: data.transactions?.[0]
     });
+    
     res.json({
-      transactions: response.data.transactions,
-      accounts: response.data.accounts
+      transactions: data.transactions,
+      accounts: data.accounts
     });
   } catch (error) {
     console.error('Plaid transactions error:', error);
@@ -322,20 +411,36 @@ app.post('/api/transactions', async (req, res) => {
     }
 
     console.log('Fetching transactions with access token...');
-    const response = await plaidClient.transactionsGet({
-      access_token,
-      start_date: '2024-01-01',
-      end_date: new Date().toISOString().split('T')[0],
-      options: { count: 100, offset: 0 }
+    // Use fetch instead of Plaid SDK
+    const today = new Date();
+    const start_date = '2024-01-01';
+    const end_date = today.toISOString().split('T')[0];
+    
+    const response = await fetch('https://sandbox.plaid.com/transactions/get', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'PLAID-CLIENT-ID': plaidClientId,
+        'PLAID-SECRET': plaidSecret,
+      },
+      body: JSON.stringify({
+        access_token,
+        start_date,
+        end_date,
+        options: { count: 100, offset: 0 }
+      })
     });
+    
+    const data = await response.json();
     console.log('Got transactions response:', {
-      numTransactions: response.data.transactions?.length,
-      numAccounts: response.data.accounts?.length,
-      firstTransaction: response.data.transactions?.[0]
+      numTransactions: data.transactions?.length,
+      numAccounts: data.accounts?.length,
+      firstTransaction: data.transactions?.[0]
     });
+    
     res.json({
-      transactions: response.data.transactions,
-      accounts: response.data.accounts
+      transactions: data.transactions,
+      accounts: data.accounts
     });
   } catch (error) {
     console.error('Plaid transactions error:', error);
@@ -467,6 +572,68 @@ If the user's message is conversational or general, respond appropriately withou
   } catch (error) {
     console.error('🧠 OpenAI chat error:', error);
     res.status(500).json({ error: 'Failed to generate a response', details: error.message });
+  }
+});
+
+// Additional function to directly call Plaid API for debugging
+app.post('/debug-plaid', async (req, res) => {
+  const { userId } = req.body;
+  if (!userId) return res.status(400).json({ error: 'User ID is required' });
+
+  try {
+    console.log('Attempting direct Plaid API call with fetch');
+    const response = await fetch('https://sandbox.plaid.com/link/token/create', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'PLAID-CLIENT-ID': plaidClientId,
+        'PLAID-SECRET': plaidSecret,
+      },
+      body: JSON.stringify({
+        client_name: 'Ventryx',
+        user: { client_user_id: userId },
+        products: ['transactions'],
+        country_codes: ['US'],
+        language: 'en'
+      })
+    });
+    
+    const data = await response.json();
+    res.json(data);
+  } catch (error) {
+    console.error('Direct Plaid API call error:', error);
+    res.status(500).json({ error: 'Failed to make direct Plaid API call', details: error.message });
+  }
+});
+
+// Also add the endpoint with the /api prefix
+app.post('/api/debug-plaid', async (req, res) => {
+  const { userId } = req.body;
+  if (!userId) return res.status(400).json({ error: 'User ID is required' });
+
+  try {
+    console.log('Attempting direct Plaid API call with fetch');
+    const response = await fetch('https://sandbox.plaid.com/link/token/create', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'PLAID-CLIENT-ID': plaidClientId,
+        'PLAID-SECRET': plaidSecret,
+      },
+      body: JSON.stringify({
+        client_name: 'Ventryx',
+        user: { client_user_id: userId },
+        products: ['transactions'],
+        country_codes: ['US'],
+        language: 'en'
+      })
+    });
+    
+    const data = await response.json();
+    res.json(data);
+  } catch (error) {
+    console.error('Direct Plaid API call error:', error);
+    res.status(500).json({ error: 'Failed to make direct Plaid API call', details: error.message });
   }
 });
 
