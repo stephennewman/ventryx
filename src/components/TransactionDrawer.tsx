@@ -145,13 +145,13 @@ Keep the tone friendly and focus on actionable opportunities to save money or ge
 
       {/* Drawer */}
       <div 
-        className={`fixed inset-y-0 right-0 w-96 bg-white shadow-xl transform transition-transform duration-300 ease-in-out z-50 overflow-y-auto ${
+        className={`fixed inset-y-0 right-0 w-96 bg-gradient-to-br from-white via-purple-50 to-blue-50 shadow-xl transform transition-transform duration-300 ease-in-out z-50 overflow-y-auto ${
           isOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
         {/* Header */}
         <div className="border-b border-gray-200 p-4 flex justify-between items-center sticky top-0 bg-white">
-          <h2 className="text-xl font-semibold text-left">Transaction Details</h2>
+          <h2 className="text-xl font-semibold text-left">Transaction Analysis</h2>
           <button 
             onClick={onClose}
             className="text-gray-500 hover:text-gray-700"
@@ -172,46 +172,20 @@ Keep the tone friendly and focus on actionable opportunities to save money or ge
           </div>
 
           <div className="space-y-4">
-            <div>
-              <label className="text-sm text-gray-600 block">Date</label>
-              <p className="text-gray-900">{new Date(transaction.date).toLocaleDateString()}</p>
-            </div>
-
-            <div>
-              <label className="text-sm text-gray-600 block">Status</label>
-              <p className="text-gray-900">{transaction.pending ? 'Pending' : 'Posted'}</p>
-            </div>
-
-            {transaction.category && (
-              <div>
-                <label className="text-sm text-gray-600 block">Categories</label>
-                <div className="flex flex-wrap gap-2 mt-1">
-                  {transaction.category.map((category, index) => (
-                    <span 
-                      key={index}
-                      className="px-2 py-1 bg-blue-100 text-blue-800 text-sm rounded-full"
-                    >
-                      {category}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-
             {stats && (
               <div className="bg-gray-50 rounded-lg p-4 space-y-2">
-                <label className="text-sm text-gray-600 block font-medium">Merchant Analysis</label>
+                <label className="text-sm text-gray-600 block font-medium">Analysis Last {stats.daysSinceFirst} Days</label>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <p className="text-sm text-gray-600">Total Spent</p>
                     <p className="text-lg font-semibold">${stats.totalSpent.toFixed(2)}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-600">Average Transaction</p>
+                    <p className="text-sm text-gray-600">Avg. Transaction</p>
                     <p className="text-lg font-semibold">${stats.averageSpent.toFixed(2)}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-600">Monthly Average</p>
+                    <p className="text-sm text-gray-600">Avg. Monthly Spend</p>
                     <p className="text-lg font-semibold">${stats.monthlyAverage.toFixed(2)}</p>
                   </div>
                   <div>
@@ -223,9 +197,9 @@ Keep the tone friendly and focus on actionable opportunities to save money or ge
             )}
 
             {aiInsight && (
-              <div className="bg-blue-50 rounded-lg p-4">
-                <label className="text-sm text-blue-800 block font-medium">AI Insight</label>
-                <div className="text-sm text-blue-900 mt-1">
+              <div className="bg-purple-50 rounded-lg p-4">
+                <label className="text-sm text-purple-800 block font-medium">AI Insight</label>
+                <div className="text-sm text-purple-900 mt-1">
                   {isLoadingInsight ? 'Generating insights...' : <ReactMarkdown>{aiInsight}</ReactMarkdown>}
                 </div>
               </div>
@@ -243,6 +217,32 @@ Keep the tone friendly and focus on actionable opportunities to save money or ge
               </div>
             )}
 
+            <div>
+              <label className="text-sm text-gray-600 block">Date</label>
+              <p className="text-gray-900">{new Date(transaction.date).toLocaleDateString()}</p>
+            </div>
+
+            <div>
+              <label className="text-sm text-gray-600 block">Status</label>
+              <p className="text-gray-900">{transaction.pending ? 'Pending' : 'Posted'}</p>
+            </div>
+
+            {transaction.category && (
+              <div>
+                <label className="text-sm text-gray-600 block">Categories</label>
+                <div className="flex flex-wrap gap-2 mt-1">
+                  {transaction.category.map((category, index) => (
+                    <span 
+                      key={index}
+                      className="px-2 py-1 bg-gradient-to-r from-purple-100 via-pink-100 to-blue-100 text-purple-900 text-sm rounded-full"
+                    >
+                      {category}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {transaction.payment_channel && (
               <div>
                 <label className="text-sm text-gray-600 block">Payment Method</label>
@@ -256,4 +256,4 @@ Keep the tone friendly and focus on actionable opportunities to save money or ge
   );
 };
 
-export default TransactionDrawer; 
+export default TransactionDrawer;

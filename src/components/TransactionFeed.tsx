@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Transaction } from '../plaid';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
-import { FaCalendarAlt, FaSort } from 'react-icons/fa';
+import { FaCalendarAlt, FaSort, FaChevronDown } from 'react-icons/fa';
 import TransactionDrawer from './TransactionDrawer';
 
 interface TransactionFeedProps {
@@ -14,7 +14,7 @@ interface TransactionFeedProps {
 // Custom input component for the date picker
 const CustomDateInput = React.forwardRef<HTMLButtonElement, React.ComponentProps<'button'>>(({ onClick }, ref) => (
   <button className="p-2 border rounded flex items-center" onClick={onClick} ref={ref}>
-    <FaCalendarAlt className="mr-2" />
+    <FaCalendarAlt className="mr-2 text-purple-600" />
   </button>
 ));
 
@@ -128,7 +128,7 @@ const TransactionFeed: React.FC<TransactionFeedProps> = ({ transactions, selecte
   return (
     <div className="space-y-4">
       {withdrawalCount > 0 && (
-        <div className="p-4 rounded-lg shadow-md flex justify-between items-start bg-blue-50">
+        <div className="p-4 rounded-lg shadow-md flex justify-between items-start bg-gradient-to-r from-purple-50 via-pink-50 to-blue-50">
           <div className="text-left">
             {lastXDays > 0 && (
               <p className="text-sm text-gray-700">Days Analyzed: {lastXDays}</p>
@@ -144,22 +144,31 @@ const TransactionFeed: React.FC<TransactionFeedProps> = ({ transactions, selecte
           </div>
         </div>
       )}
-      <div className="flex items-center space-x-4 mb-4">
+      <div className="flex flex-wrap items-center gap-4 mb-4">
         <input
           type="text"
           placeholder="Search transactions..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="p-2 border rounded flex-1"
+        className="p-2 border border-purple-300 rounded bg-purple-50 text-purple-800 w-64"
         />
         <label htmlFor="sort" className="mr-2">Sort by:</label>
-        <select id="sort" value={sortOption} onChange={handleSortChange} className="p-2 border rounded flex items-center">
-          <FaSort className="mr-2" />
-          <option value="date-desc">Date (Newest to Oldest)</option>
-          <option value="date-asc">Date (Oldest to Newest)</option>
-          <option value="amount-desc">Amount (Highest to Lowest)</option>
-          <option value="amount-asc">Amount (Lowest to Highest)</option>
-        </select>
+        <div className="relative">
+          <select
+            id="sort"
+            value={sortOption}
+            onChange={handleSortChange}
+            className="appearance-none bg-purple-50 border border-purple-300 text-purple-800 rounded p-2 pr-8"
+          >
+            <option value="date-desc">Date (Newest to Oldest)</option>
+            <option value="date-asc">Date (Oldest to Newest)</option>
+            <option value="amount-desc">Amount (Highest to Lowest)</option>
+            <option value="amount-asc">Amount (Lowest to Highest)</option>
+          </select>
+          <div className="absolute right-2 top-1/2 transform -translate-y-1/2 text-purple-600 pointer-events-none">
+            <FaChevronDown />
+          </div>
+        </div>
         <DatePicker
           selectsRange={true}
           startDate={startDate}
@@ -183,11 +192,11 @@ const TransactionFeed: React.FC<TransactionFeedProps> = ({ transactions, selecte
       {filteredTransactions.map((transaction) => (
         <div
           key={transaction.transaction_id}
-          className="bg-white p-2 rounded-lg shadow-md hover:shadow-lg transition-shadow relative cursor-pointer z-0"
+          className="bg-gradient-to-r from-white via-purple-50 to-blue-50 p-2 rounded-lg shadow hover:shadow-lg transition-shadow relative cursor-pointer z-0"
           onClick={() => handleTransactionClick(transaction)}
         >
           <div
-            className={`absolute inset-y-0 left-0 ${transaction.amount < 0 ? 'bg-green-500' : 'bg-red-500'} opacity-20`}
+            className={`absolute inset-y-0 left-0 ${transaction.amount < 0 ? 'bg-purple-100' : 'bg-pink-100'} opacity-20`}
             style={{ width: `${(Math.abs(transaction.amount) / maxFilteredTransactionAmount) * 100}%` }}
           />
           <div className="flex justify-between items-center relative">
@@ -205,7 +214,7 @@ const TransactionFeed: React.FC<TransactionFeedProps> = ({ transactions, selecte
                 {transaction.amount < 0 && (
                   <span
                     onClick={(e) => { e.stopPropagation(); handleCategoryClick('$'); }}
-                    className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full ml-2 cursor-pointer"
+                    className="px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded-full ml-2 cursor-pointer"
                   >
                     $
                   </span>
@@ -213,7 +222,7 @@ const TransactionFeed: React.FC<TransactionFeedProps> = ({ transactions, selecte
                 {transaction.amount > 0 && (
                   <span
                     onClick={(e) => { e.stopPropagation(); handleCategoryClick('-$'); }}
-                    className="px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full ml-2 cursor-pointer"
+                    className="px-2 py-1 bg-pink-100 text-pink-800 text-xs rounded-full ml-2 cursor-pointer"
                   >
                     -$
                   </span>
@@ -224,7 +233,7 @@ const TransactionFeed: React.FC<TransactionFeedProps> = ({ transactions, selecte
                       <span
                         key={index}
                         onClick={(e) => { e.stopPropagation(); handleCategoryClick(category); }}
-                        className={`px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full cursor-pointer ${selectedCategory === category ? 'bg-blue-300' : ''}`}
+                        className={`px-2 py-1 bg-gradient-to-r from-purple-100 via-pink-100 to-blue-100 text-purple-900 text-xs rounded-full cursor-pointer ${selectedCategory === category ? 'bg-purple-200' : ''}`}
                       >
                         {category}
                       </span>
@@ -237,7 +246,7 @@ const TransactionFeed: React.FC<TransactionFeedProps> = ({ transactions, selecte
               <p className="text-sm text-gray-600 mb-1">
                 {new Date(transaction.date).toLocaleDateString()}
               </p>
-              <p className={`text-lg font-semibold ${transaction.amount < 0 ? 'text-green-600' : 'text-red-600'}`}>
+              <p className={`text-lg font-semibold ${transaction.amount < 0 ? 'text-purple-600' : 'text-pink-600'}`}>
                 ${Math.abs(transaction.amount).toFixed(2)}
               </p>
               {transaction.pending && (

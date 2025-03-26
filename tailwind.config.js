@@ -5,7 +5,12 @@ export default {
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
-    extend: {},
+    extend: {
+      fontFamily: {
+        sans: ['Space Grotesk', 'Arial', 'sans-serif'],
+        'space-grotesk': ['Space Grotesk', 'sans-serif'],
+      },
+    },
   },
   plugins: [],
 } 
