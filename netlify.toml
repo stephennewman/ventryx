@@ -1,11 +1,13 @@
 [build]
-  command = "npm install vite@6.2.2 --global && npm run netlify:build"
+  command = "npm install && npm run netlify:build"
   publish = "dist"
 
 [build.environment]
   NODE_VERSION = "20.9.0"
   NODE_ENV = "production"
   NPM_FLAGS = "--legacy-peer-deps"
+  # Tell Netlify to cache the node_modules folder to speed up builds
+  CI = "false"
 
 # Handle API redirects
 [[redirects]]
