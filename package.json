@@ -8,6 +8,7 @@
     "backend": "node functions/server/server.js",
     "frontend": "vite",
     "build": "vite build --mode production",
+    "netlify:build": "npm install vite@6.2.2 --no-save && vite build --mode production",
     "preview": "vite preview",
     "test": "jest",
     "test:watch": "jest --watch",

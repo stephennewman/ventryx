@@ -1,10 +1,19 @@
 [build]
-  command = "npm run build"
+  command = "npm run netlify:build"
   publish = "dist"
 
 [build.environment]
   NODE_VERSION = "20.5.0"
   NODE_ENV = "production"
+  NPM_FLAGS = "--no-optional"
+
+# Explicitly ensure Vite is installed during build
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+# Pre-build steps to ensure dependencies are properly installed
+[build.lifecycle]
+  onBuild = "npm install vite@6.2.2 --save-dev"
 
 # Handle API redirects in development mode
 [[redirects]]
