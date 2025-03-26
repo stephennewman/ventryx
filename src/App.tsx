@@ -202,7 +202,7 @@ const App: React.FC = () => {
   }, []);
 
   const MainContent = () => (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-gradient-to-br from-white via-blue-50 to-purple-50">
       <div className="max-w-6xl mx-auto p-6">
         <div className="text-center mb-8">
           <img
@@ -243,13 +243,9 @@ const App: React.FC = () => {
                   <button
                     onClick={() => ready && open()}
                     disabled={!ready || !linkToken || isLoading}
-                    className={`font-semibold px-6 py-3 rounded-lg shadow ${
-                      (accounts?.length || 0) > 0
-                        ? 'bg-green-600 hover:bg-green-700 text-white'
-                        : 'bg-blue-600 hover:bg-blue-700 text-white'
-                    } disabled:opacity-50 disabled:cursor-not-allowed`}
+                    className="font-semibold px-6 py-3 rounded-lg shadow text-white bg-gradient-to-r from-purple-500 via-pink-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {isLoading ? 'Loading...' : (accounts?.length || 0) > 0 ? 'Connected • Add Another Account' : 'Connect Your Bank Account'}
+                    {isLoading ? 'Loading...' : (accounts?.length || 0) > 0 ? ' Connected • Add Another Account' : 'Connect Your Bank Account'}
                   </button>
                 </div>
 
@@ -270,8 +266,8 @@ const App: React.FC = () => {
                       {(accounts || []).map(account => (
                         <div
                           key={account.account_id}
-                          className={`bg-blue-50 p-4 rounded-lg shadow-md cursor-pointer text-left ${
-                            selectedAccountId === account.account_id ? 'ring-2 ring-blue-500' : ''
+                          className={`bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 p-4 rounded-lg shadow-md cursor-pointer text-left ${
+                            selectedAccountId === account.account_id ? 'ring-2 ring-purple-500' : ''
                           }`}
                           onClick={() => {
                             setSelectedAccountId(prevId => 
@@ -312,7 +308,7 @@ const App: React.FC = () => {
                 <div className="fixed bottom-4 right-4">
                   <button
                     onClick={() => setIsChatOpen(true)}
-                    className="bg-blue-500 hover:bg-blue-600 text-white rounded-full p-4 shadow-lg transition-colors"
+                    className="bg-gradient-to-r from-purple-500 via-pink-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white rounded-full p-4 shadow-lg transition-all"
                   >
                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />

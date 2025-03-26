@@ -93,7 +93,7 @@ const ChatDrawer: React.FC<ChatDrawerProps> = ({ isOpen, onClose, transactions }
 
       {/* Drawer */}
       <div 
-        className={`fixed inset-y-0 right-0 w-96 bg-white shadow-xl transform transition-transform duration-300 ease-in-out z-50 flex flex-col ${
+        className={`fixed inset-y-0 right-0 w-96 bg-gradient-to-br from-white via-purple-50 to-blue-50 shadow-xl transform transition-transform duration-300 ease-in-out z-50 flex flex-col ${
           isOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
@@ -123,8 +123,8 @@ const ChatDrawer: React.FC<ChatDrawerProps> = ({ isOpen, onClose, transactions }
               <div
                 className={`max-w-[80%] rounded-lg px-4 py-2 ${
                   chat.role === 'user'
-                    ? 'bg-blue-500 text-white text-right'
-                    : 'bg-gray-100 text-gray-800 text-left'
+                    ? 'bg-gradient-to-r from-purple-500 via-pink-500 to-blue-500 text-white text-right hover:shadow-md transition-shadow'
+                    : 'bg-white text-gray-800 border border-purple-100 shadow-sm text-left hover:shadow-md transition-shadow'
                 }`}
               >
                 <div className={chat.role === 'user' ? 'text-right' : 'text-left'}>
@@ -162,7 +162,7 @@ const ChatDrawer: React.FC<ChatDrawerProps> = ({ isOpen, onClose, transactions }
           <button
             onClick={handleSend}
             disabled={loading || !prompt.trim()}
-            className="w-full bg-blue-500 text-white px-4 py-3 rounded-lg disabled:bg-gray-300 disabled:cursor-not-allowed hover:bg-blue-600 transition-colors font-medium"
+            className="w-full bg-gradient-to-r from-purple-500 via-pink-500 to-blue-500 text-white px-4 py-3 rounded-lg disabled:bg-gray-300 disabled:cursor-not-allowed hover:from-purple-600 hover:to-blue-600 transition-all font-medium"
           >
             {loading ? 'Sending...' : 'Send'}
           </button>
@@ -172,4 +172,4 @@ const ChatDrawer: React.FC<ChatDrawerProps> = ({ isOpen, onClose, transactions }
   );
 };
 
-export default ChatDrawer; 
+export default ChatDrawer;

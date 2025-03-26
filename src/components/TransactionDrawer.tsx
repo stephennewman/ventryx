@@ -145,7 +145,7 @@ Keep the tone friendly and focus on actionable opportunities to save money or ge
 
       {/* Drawer */}
       <div 
-        className={`fixed inset-y-0 right-0 w-96 bg-white shadow-xl transform transition-transform duration-300 ease-in-out z-50 overflow-y-auto ${
+        className={`fixed inset-y-0 right-0 w-96 bg-gradient-to-br from-white via-purple-50 to-blue-50 shadow-xl transform transition-transform duration-300 ease-in-out z-50 overflow-y-auto ${
           isOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
@@ -197,9 +197,9 @@ Keep the tone friendly and focus on actionable opportunities to save money or ge
             )}
 
             {aiInsight && (
-              <div className="bg-blue-50 rounded-lg p-4">
-                <label className="text-sm text-blue-800 block font-medium">AI Insight</label>
-                <div className="text-sm text-blue-900 mt-1">
+              <div className="bg-purple-50 rounded-lg p-4">
+                <label className="text-sm text-purple-800 block font-medium">AI Insight</label>
+                <div className="text-sm text-purple-900 mt-1">
                   {isLoadingInsight ? 'Generating insights...' : <ReactMarkdown>{aiInsight}</ReactMarkdown>}
                 </div>
               </div>
@@ -234,7 +234,7 @@ Keep the tone friendly and focus on actionable opportunities to save money or ge
                   {transaction.category.map((category, index) => (
                     <span 
                       key={index}
-                      className="px-2 py-1 bg-blue-100 text-blue-800 text-sm rounded-full"
+                      className="px-2 py-1 bg-gradient-to-r from-purple-100 via-pink-100 to-blue-100 text-purple-900 text-sm rounded-full"
                     >
                       {category}
                     </span>
@@ -256,4 +256,4 @@ Keep the tone friendly and focus on actionable opportunities to save money or ge
   );
 };
 
-export default TransactionDrawer; 
+export default TransactionDrawer;
