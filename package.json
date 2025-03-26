@@ -4,7 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "node functions/server/server.js",
+    "dev": "concurrently \"npm run backend\" \"npm run frontend\"",
+    "backend": "node functions/server/server.js",
+    "frontend": "vite",
     "build": "vite build --mode production",
     "preview": "vite preview",
     "test": "jest",
@@ -30,6 +32,7 @@
     "@vitejs/plugin-react": "^4.3.4",
     "autoprefixer": "^10.4.17",
     "babel-jest": "^29.7.0",
+    "concurrently": "^9.1.2",
     "esbuild": "^0.25.1",
     "eslint": "^9.22.0",
     "eslint-plugin-react": "^7.37.4",
