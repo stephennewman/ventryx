@@ -336,6 +336,12 @@ const App: React.FC = () => {
           <div className="flex flex-col items-center justify-center min-h-[70vh]">
             <div className="bg-gradient-to-br from-white via-purple-50 to-blue-50 p-8 rounded-lg shadow-lg max-w-md w-full">
               <div className="flex flex-col items-center space-y-6">
+                <img
+                  src="https://blog.krezzo.com/hs-fs/hubfs/Krezzo-Logo-2023-Light.png?width=3248&height=800&name=Krezzo-Logo-2023-Light.png"
+                  alt="Krezzo Logo"
+                  className="mb-4"
+                  style={{ width: '150px', height: 'auto' }}
+                />
                 <h2 className="text-2xl font-semibold text-gray-800 mb-2">Welcome to Krezzo</h2>
                 <button 
                   onClick={signInWithGoogle}
