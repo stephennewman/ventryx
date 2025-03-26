@@ -1,21 +1,13 @@
 [build]
-  command = "npm run netlify:build"
+  command = "npm install vite@6.2.2 --global && npm run netlify:build"
   publish = "dist"
 
 [build.environment]
   NODE_VERSION = "20.9.0"
   NODE_ENV = "production"
-  NPM_FLAGS = "--no-optional"
+  NPM_FLAGS = "--legacy-peer-deps"
 
-# Explicitly ensure Vite is installed during build
-[[plugins]]
-  package = "@netlify/plugin-nextjs"
-
-# Pre-build steps to ensure dependencies are properly installed
-[build.lifecycle]
-  onBuild = "npm install vite@6.2.2 --save-dev"
-
-# Handle API redirects in development mode
+# Handle API redirects
 [[redirects]]
   from = "/api/*"
   to = "https://us-central1-ventryx-71b2a.cloudfunctions.net/api/:splat"
