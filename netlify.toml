@@ -1,12 +1,17 @@
 [build]
-  command = "npm run build"
+  command = "npm install postcss tailwindcss autoprefixer --no-save && npm install && npx vite build --mode production"
   publish = "dist"
+  functions = "netlify/functions"
 
 [build.environment]
-  NODE_VERSION = "20.5.0"
+  NODE_VERSION = "20.11.0"
   NODE_ENV = "production"
+  NPM_FLAGS = "--legacy-peer-deps"
+  NPM_CONFIG_LEGACY_PEER_DEPS = "true"
+  # Tell Netlify to cache the node_modules folder to speed up builds
+  CI = "false"
 
-# Handle API redirects in development mode
+# Handle API redirects
 [[redirects]]
   from = "/api/*"
   to = "https://us-central1-ventryx-71b2a.cloudfunctions.net/api/:splat"
