@@ -30,6 +30,11 @@ interface PlaidEvent {
 
 const API_URL = `${import.meta.env.VITE_API_URL}/api` || 'http://localhost:5176/api';
 
+// Add this before the App component declaration
+window.clearAccountFilter = () => {
+  // This will be set properly inside the component
+};
+
 const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState<boolean>(false);
@@ -181,13 +186,20 @@ const App: React.FC = () => {
     }
   };
 
-  const clearFilters = () => {
-    setSelectedAccountId(null);
-  };
-
   const handleOnboardingComplete = () => {
     setHasCompletedOnboarding(true);
   };
+
+  // Set up the global handler to clear account selection
+  useEffect(() => {
+    window.clearAccountFilter = () => {
+      setSelectedAccountId(null);
+    };
+    
+    return () => {
+      window.clearAccountFilter = () => {};
+    };
+  }, []);
 
   const MainContent = () => (
     <div className="min-h-screen bg-gray-100">
@@ -258,10 +270,13 @@ const App: React.FC = () => {
                       {(accounts || []).map(account => (
                         <div
                           key={account.account_id}
-                          className="bg-blue-50 p-4 rounded-lg shadow-md cursor-pointer text-left"
+                          className={`bg-blue-50 p-4 rounded-lg shadow-md cursor-pointer text-left ${
+                            selectedAccountId === account.account_id ? 'ring-2 ring-blue-500' : ''
+                          }`}
                           onClick={() => {
-                            setSelectedAccountId(account.account_id);
-                            clearFilters();
+                            setSelectedAccountId(prevId => 
+                              prevId === account.account_id ? null : account.account_id
+                            );
                           }}
                         >
                           <h3 className="text-lg font-semibold text-left">{account.name}</h3>
@@ -278,6 +293,7 @@ const App: React.FC = () => {
                             transaction => !selectedAccountId || transaction.account_id === selectedAccountId
                           )}
                           selectedAccountId={selectedAccountId}
+                          onClearAccountFilter={() => setSelectedAccountId(null)}
                         />
                       )}
                     </div>
@@ -361,5 +377,12 @@ const App: React.FC = () => {
     </Router>
   );
 };
+
+// Also add TypeScript declaration for the global property
+declare global {
+  interface Window {
+    clearAccountFilter: () => void;
+  }
+}
 
 export default App;

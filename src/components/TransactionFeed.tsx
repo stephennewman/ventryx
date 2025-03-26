@@ -8,6 +8,7 @@ import TransactionDrawer from './TransactionDrawer';
 interface TransactionFeedProps {
   transactions: Transaction[];
   selectedAccountId: string | null;
+  onClearAccountFilter: () => void;
 }
 
 // Custom input component for the date picker
@@ -17,7 +18,7 @@ const CustomDateInput = React.forwardRef<HTMLButtonElement, React.ComponentProps
   </button>
 ));
 
-const TransactionFeed: React.FC<TransactionFeedProps> = ({ transactions, selectedAccountId }) => {
+const TransactionFeed: React.FC<TransactionFeedProps> = ({ transactions, selectedAccountId, onClearAccountFilter }) => {
   const [selectedCategory, setSelectedCategory] = React.useState<string | null>(null);
   const [selectedVendor, setSelectedVendor] = React.useState<string | null>(null);
   const [totalAmount, setTotalAmount] = React.useState<number>(0);
@@ -32,6 +33,7 @@ const TransactionFeed: React.FC<TransactionFeedProps> = ({ transactions, selecte
   const [sortOption, setSortOption] = useState<string>('date');
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [shouldClearAccountFilter, setShouldClearAccountFilter] = useState(false);
 
   const handleCategoryClick = (category: string) => {
     setSelectedCategory(category === selectedCategory ? null : category);
@@ -67,6 +69,7 @@ const TransactionFeed: React.FC<TransactionFeedProps> = ({ transactions, selecte
                           transaction.name.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory = selectedCategory === '$' ? transaction.amount < 0 : selectedCategory === '-$' ? transaction.amount > 0 : selectedCategory ? transaction.category.includes(selectedCategory) : true;
     const matchesVendor = selectedVendor ? (transaction.merchant_name || transaction.name) === selectedVendor : true;
+  
     return matchesSearch && matchesCategory && matchesVendor && isWithinDateRange;
   });
 
@@ -91,7 +94,17 @@ const TransactionFeed: React.FC<TransactionFeedProps> = ({ transactions, selecte
   const clearFilters = () => {
     setSelectedCategory(null);
     setSelectedVendor(null);
+    if (selectedAccountId) {
+      onClearAccountFilter();
+    }
   };
+
+  // Use an effect to notify parent when account filter should be cleared
+  React.useEffect(() => {
+    if (shouldClearAccountFilter && window.clearAccountFilter) {
+      window.clearAccountFilter();
+    }
+  }, [shouldClearAccountFilter]);
 
   const filteredWithdrawals = filteredTransactions.filter(transaction => transaction.amount > 0);
   const uniqueVendors = new Set(filteredWithdrawals.map(transaction => transaction.merchant_name || transaction.name)).size;
