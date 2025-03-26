@@ -4,7 +4,16 @@
 
 [build.environment]
   NODE_VERSION = "20.5.0"
+  NODE_ENV = "production"
 
+# Handle API redirects in development mode
+[[redirects]]
+  from = "/api/*"
+  to = "https://us-central1-ventryx-71b2a.cloudfunctions.net/api/:splat"
+  status = 200
+  force = true
+
+# Default redirect for SPA
 [[redirects]]
   from = "/*"
   to = "/index.html"

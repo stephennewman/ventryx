@@ -26,6 +26,7 @@ exports.api = onRequest(
         "https://ventryx.com",
         "https://www.ventryx.com",
         "http://localhost:5173",
+        "http://localhost:5174",
         "http://localhost:5176"
       ],
       methods: ["GET", "POST", "OPTIONS"],
