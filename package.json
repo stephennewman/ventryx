@@ -14,8 +14,8 @@
     "test:coverage": "jest --coverage",
     "lint": "eslint .",
     "deploy:functions": "firebase deploy --only functions",
-    "deploy:frontend": "netlify deploy --prod",
-    "deploy": "npm run build && npm run deploy:functions && npm run deploy:frontend"
+    "deploy:frontend": "npm run build && netlify deploy --prod",
+    "deploy": "npm run build && npm run deploy:functions && netlify deploy --prod"
   },
   "keywords": [],
   "author": "",
