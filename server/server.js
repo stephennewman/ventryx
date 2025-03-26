@@ -4,6 +4,7 @@ const path = require('path');
 const { Configuration, PlaidApi, PlaidEnvironments } = require('plaid');
 const { OpenAI } = require('openai');
 const admin = require('firebase-admin');
+const functions = require('firebase-functions');
 
 // Load environment variables based on NODE_ENV
 if (!process.env.PLAID_CLIENT_ID) {  // Only load if not already loaded by functions
@@ -72,13 +73,21 @@ console.log('Plaid Client ID:', process.env.PLAID_CLIENT_ID ? 'Present' : 'Missi
 console.log('Plaid Secret:', process.env.PLAID_SECRET ? 'Present' : 'Missing');
 console.log('OpenAI API Key:', process.env.OPENAI_API_KEY ? 'Present' : 'Missing');
 
+// Determine Plaid credentials based on the environment
+const plaidClientId = process.env.NODE_ENV === 'production'
+  ? functions.config().plaid.client_id
+  : process.env.PLAID_CLIENT_ID;
+const plaidSecret = process.env.NODE_ENV === 'production'
+  ? functions.config().plaid.secret
+  : process.env.PLAID_SECRET;
+
 // Plaid client setup with environment-specific configuration
 const configuration = new Configuration({
   basePath: process.env.NODE_ENV === 'production' ? PlaidEnvironments.production : PlaidEnvironments.sandbox,
   baseOptions: {
     headers: {
-      'PLAID-CLIENT-ID': process.env.PLAID_CLIENT_ID,
-      'PLAID-SECRET': process.env.PLAID_SECRET,
+      'PLAID-CLIENT-ID': plaidClientId,
+      'PLAID-SECRET': plaidSecret,
     },
   },
 });
