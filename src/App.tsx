@@ -227,18 +227,23 @@ const App: React.FC = () => {
                     {user.photoURL && (
                       <img src={user.photoURL} alt="User Avatar" className="w-12 h-12 rounded-full" />
                     )}
-                    <div className="text-left">
-                      <h2 className="text-xl font-semibold">{user.displayName}</h2>
-                      <p className="text-gray-600">{user.email}</p>
-                    </div>
+                      <div className="text-left sticky top-6 z-10 bg-white p-2 rounded">
+                        <div className="relative group inline-block">
+                          <div>
+                            <h2 className="text-xl font-semibold">{user.displayName}</h2>
+                            <p className="text-gray-600">{user.email}</p>
+                          </div>
+                          <div className="absolute top-full left-0 mt-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                            <button
+                              onClick={logOut}
+                              className="text-sm text-purple-600 bg-white px-3 py-1 rounded shadow hover:bg-purple-50"
+                            >
+                              Sign Out
+                            </button>
+                          </div>
+                        </div>
+                      </div>
                   </div>
-
-                  <button
-                    onClick={() => logOut()}
-                    className="text-gray-400 hover:text-gray-600 font-medium"
-                  >
-                    Sign Out
-                  </button>
 
                   <button
                     onClick={() => ready && open()}
