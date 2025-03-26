@@ -204,14 +204,16 @@ const App: React.FC = () => {
   const MainContent = () => (
     <div className="min-h-screen bg-gradient-to-br from-white via-blue-50 to-purple-50">
       <div className="max-w-6xl mx-auto p-6">
-        <div className="text-center mb-8">
-          <img
-            src="https://blog.krezzo.com/hs-fs/hubfs/Krezzo-Logo-2023-Light.png?width=3248&height=800&name=Krezzo-Logo-2023-Light.png"
-            alt="Krezzo Logo"
-            className="mx-auto mb-2"
-            style={{ width: '200px', height: 'auto' }}
-          />
-        </div>
+        {(userStateLoading || user) && (
+          <div className="text-center mb-8">
+            <img
+              src="https://blog.krezzo.com/hs-fs/hubfs/Krezzo-Logo-2023-Light.png?width=3248&height=800&name=Krezzo-Logo-2023-Light.png"
+              alt="Krezzo Logo"
+              className="mx-auto mb-2"
+              style={{ width: '200px', height: 'auto' }}
+            />
+          </div>
+        )}
 
         {userStateLoading ? (
           <div className="text-center py-8">
@@ -227,18 +229,23 @@ const App: React.FC = () => {
                     {user.photoURL && (
                       <img src={user.photoURL} alt="User Avatar" className="w-12 h-12 rounded-full" />
                     )}
-                    <div className="text-left">
-                      <h2 className="text-xl font-semibold">{user.displayName}</h2>
-                      <p className="text-gray-600">{user.email}</p>
-                    </div>
+                      <div className="text-left sticky top-6 z-10 bg-white p-2 rounded">
+                        <div className="relative group inline-block">
+                          <div>
+                            <h2 className="text-xl font-semibold">{user.displayName}</h2>
+                            <p className="text-gray-600">{user.email}</p>
+                          </div>
+                          <div className="absolute top-full left-0 mt-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                            <button
+                              onClick={logOut}
+                              className="text-sm text-purple-600 bg-white px-3 py-1 rounded shadow hover:bg-purple-50"
+                            >
+                              Sign Out
+                            </button>
+                          </div>
+                        </div>
+                      </div>
                   </div>
-
-                  <button
-                    onClick={() => logOut()}
-                    className="text-gray-400 hover:text-gray-600 font-medium"
-                  >
-                    Sign Out
-                  </button>
 
                   <button
                     onClick={() => ready && open()}
@@ -328,34 +335,45 @@ const App: React.FC = () => {
             </div>
           )
         ) : (
-          <div className="flex flex-col items-center mt-8 space-y-4">
-            <button 
-              onClick={signInWithGoogle}
-              className="font-semibold px-6 py-3 rounded-lg shadow text-white bg-gradient-to-r from-purple-500 via-pink-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Sign up with Google
-            </button>
-            <div className="flex items-center space-x-2">
-              <div className="h-px w-16 bg-gray-300"></div>
-              <span className="text-sm text-gray-500">or</span>
-              <div className="h-px w-16 bg-gray-300"></div>
+          <div className="flex items-center justify-center min-h-screen -mt-16">
+            <div className="bg-gradient-to-br from-white via-purple-50 to-blue-50 p-8 rounded-lg shadow-lg max-w-md w-full">
+              <div className="flex flex-col items-center space-y-6">
+                <img
+                  src="https://blog.krezzo.com/hs-fs/hubfs/Krezzo-Logo-2023-Light.png?width=3248&height=800&name=Krezzo-Logo-2023-Light.png"
+                  alt="Krezzo Logo"
+                  className="mb-4"
+                  style={{ width: '150px', height: 'auto' }}
+                />
+                <h2 className="text-2xl font-semibold text-gray-800 mb-2">Unlock your financial freedom</h2>
+                <button 
+                  onClick={signInWithGoogle}
+                  className="w-full font-semibold px-6 py-3 rounded-lg shadow text-white bg-gradient-to-r from-purple-500 via-pink-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Sign up with Google
+                </button>
+                <div className="flex items-center space-x-2 w-full">
+                  <div className="h-px flex-1 bg-gray-300"></div>
+                  <span className="text-sm text-gray-500">or</span>
+                  <div className="h-px flex-1 bg-gray-300"></div>
+                </div>
+                <button 
+                  onClick={signInWithGoogle} 
+                  className="w-full border border-purple-200 bg-white py-2 px-6 rounded-lg hover:bg-purple-50 transition-colors font-medium"
+                >
+                  Sign in with Google
+                </button>
+                <p className="text-sm text-gray-500 mt-4 text-center">
+                  By signing up, you agree to our{' '}
+                  <Link to="/terms-of-service" className="text-purple-600 hover:text-purple-800">
+                    Terms of Service
+                  </Link>{' '}
+                  and{' '}
+                  <Link to="/privacy-policy" className="text-purple-600 hover:text-purple-800">
+                    Privacy Policy
+                  </Link>
+                </p>
+              </div>
             </div>
-            <button 
-              onClick={signInWithGoogle} 
-              className="border border-purple-200 bg-white py-2 px-6 rounded-lg hover:bg-purple-50 transition-colors font-medium"
-            >
-              Sign in with Google
-            </button>
-            <p className="text-sm text-gray-500 mt-4">
-              By signing up, you agree to our{' '}
-              <Link to="/terms-of-service" className="text-purple-600 hover:text-purple-800">
-                Terms of Service
-              </Link>{' '}
-              and{' '}
-              <Link to="/privacy-policy" className="text-purple-600 hover:text-purple-800">
-                Privacy Policy
-              </Link>
-            </p>
           </div>
         )}
       </div>
