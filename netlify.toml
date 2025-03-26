@@ -1,5 +1,5 @@
 [build]
-  command = "npm install && npx vite build --mode production"
+  command = "npm install postcss tailwindcss autoprefixer --no-save && npm install && npx vite build --mode production"
   publish = "dist"
   functions = "netlify/functions"
 
