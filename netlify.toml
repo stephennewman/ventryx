@@ -1,5 +1,5 @@
 [build]
-  command = "npm install vite@6.2.2 @vitejs/plugin-react --save-dev && npm run build"
+  command = "npm install vite@6.2.2 @vitejs/plugin-react --save && npm run build"
   publish = "dist"
   functions = "netlify/functions"
 
