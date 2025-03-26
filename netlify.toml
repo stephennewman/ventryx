@@ -2,7 +2,7 @@
   command = """
     echo 'Node version:' && node --version && 
     echo 'NPM version:' && npm --version && 
-    npm ci && 
+    npm install && 
     npm list vite && 
     npm list @vitejs/plugin-react && 
     npm run build
