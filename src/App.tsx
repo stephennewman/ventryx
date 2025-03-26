@@ -333,34 +333,39 @@ const App: React.FC = () => {
             </div>
           )
         ) : (
-          <div className="flex flex-col items-center mt-8 space-y-4">
-            <button 
-              onClick={signInWithGoogle}
-              className="font-semibold px-6 py-3 rounded-lg shadow text-white bg-gradient-to-r from-purple-500 via-pink-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Sign up with Google
-            </button>
-            <div className="flex items-center space-x-2">
-              <div className="h-px w-16 bg-gray-300"></div>
-              <span className="text-sm text-gray-500">or</span>
-              <div className="h-px w-16 bg-gray-300"></div>
+          <div className="flex flex-col items-center justify-center min-h-[70vh]">
+            <div className="bg-gradient-to-br from-white via-purple-50 to-blue-50 p-8 rounded-lg shadow-lg max-w-md w-full">
+              <div className="flex flex-col items-center space-y-6">
+                <h2 className="text-2xl font-semibold text-gray-800 mb-2">Welcome to Krezzo</h2>
+                <button 
+                  onClick={signInWithGoogle}
+                  className="w-full font-semibold px-6 py-3 rounded-lg shadow text-white bg-gradient-to-r from-purple-500 via-pink-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Sign up with Google
+                </button>
+                <div className="flex items-center space-x-2 w-full">
+                  <div className="h-px flex-1 bg-gray-300"></div>
+                  <span className="text-sm text-gray-500">or</span>
+                  <div className="h-px flex-1 bg-gray-300"></div>
+                </div>
+                <button 
+                  onClick={signInWithGoogle} 
+                  className="w-full border border-purple-200 bg-white py-2 px-6 rounded-lg hover:bg-purple-50 transition-colors font-medium"
+                >
+                  Sign in with Google
+                </button>
+                <p className="text-sm text-gray-500 mt-4 text-center">
+                  By signing up, you agree to our{' '}
+                  <Link to="/terms-of-service" className="text-purple-600 hover:text-purple-800">
+                    Terms of Service
+                  </Link>{' '}
+                  and{' '}
+                  <Link to="/privacy-policy" className="text-purple-600 hover:text-purple-800">
+                    Privacy Policy
+                  </Link>
+                </p>
+              </div>
             </div>
-            <button 
-              onClick={signInWithGoogle} 
-              className="border border-purple-200 bg-white py-2 px-6 rounded-lg hover:bg-purple-50 transition-colors font-medium"
-            >
-              Sign in with Google
-            </button>
-            <p className="text-sm text-gray-500 mt-4">
-              By signing up, you agree to our{' '}
-              <Link to="/terms-of-service" className="text-purple-600 hover:text-purple-800">
-                Terms of Service
-              </Link>{' '}
-              and{' '}
-              <Link to="/privacy-policy" className="text-purple-600 hover:text-purple-800">
-                Privacy Policy
-              </Link>
-            </p>
           </div>
         )}
       </div>
