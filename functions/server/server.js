@@ -105,6 +105,7 @@ const db = admin.firestore();
 app.use(cors({
   origin: [
     'http://localhost:5173',
+    'http://localhost:5174',
     'https://ventryx.netlify.app',
     'https://ventryx.com',
     'https://www.ventryx.com'
