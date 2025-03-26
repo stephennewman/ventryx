@@ -344,7 +344,7 @@ const App: React.FC = () => {
                   className="mb-4"
                   style={{ width: '150px', height: 'auto' }}
                 />
-                <h2 className="text-2xl font-semibold text-gray-800 mb-2">Welcome to Krezzo</h2>
+                <h2 className="text-2xl font-semibold text-gray-800 mb-2">Unlock your financial freedom.</h2>
                 <button 
                   onClick={signInWithGoogle}
                   className="w-full font-semibold px-6 py-3 rounded-lg shadow text-white bg-gradient-to-r from-purple-500 via-pink-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
