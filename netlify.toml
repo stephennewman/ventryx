@@ -1,5 +1,5 @@
 [build]
-  command = "npm run build"
+  command = "npm install && npx vite build --mode production"
   publish = "dist"
   functions = "netlify/functions"
 
