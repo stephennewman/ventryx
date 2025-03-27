@@ -196,7 +196,7 @@ const TransactionFeed: React.FC<TransactionFeedProps> = ({ transactions, selecte
           onClick={() => handleTransactionClick(transaction)}
         >
           <div
-            className={`absolute inset-y-0 left-0 ${transaction.amount < 0 ? 'bg-blue-100' : 'bg-green-100'} opacity-20`}
+            className={`absolute inset-y-0 left-0 ${transaction.amount < 0 ? 'bg-green-100' : 'bg-red-100'} opacity-20`}
             style={{ width: `${(Math.abs(transaction.amount) / maxFilteredTransactionAmount) * 100}%` }}
           />
           <div className="flex justify-between items-center relative">
@@ -214,17 +214,17 @@ const TransactionFeed: React.FC<TransactionFeedProps> = ({ transactions, selecte
                 {transaction.amount < 0 && (
                   <span
                     onClick={(e) => { e.stopPropagation(); handleCategoryClick('$'); }}
-                    className="px-3 py-1 bg-blue-100 text-blue-800 text-xs rounded-full ml-2 cursor-pointer flex items-center"
+                    className="px-3 py-1 bg-green-100 text-green-800 text-xs rounded-full ml-2 cursor-pointer flex items-center"
                   >
-                    <span className="font-bold mr-1">↓</span> Incoming
+                    <span className="font-bold mr-1">←</span> Incoming
                   </span>
                 )}
                 {transaction.amount > 0 && (
                   <span
                     onClick={(e) => { e.stopPropagation(); handleCategoryClick('-$'); }}
-                    className="px-3 py-1 bg-green-100 text-green-800 text-xs rounded-full ml-2 cursor-pointer flex items-center"
+                    className="px-3 py-1 bg-red-100 text-red-800 text-xs rounded-full ml-2 cursor-pointer flex items-center"
                   >
-                    <span className="font-bold mr-1">↑</span> Outgoing
+                    <span className="font-bold mr-1">→</span> Outgoing
                   </span>
                 )}
                 {transaction.category && transaction.amount >= 0 && (
@@ -246,7 +246,7 @@ const TransactionFeed: React.FC<TransactionFeedProps> = ({ transactions, selecte
               <p className="text-sm text-gray-600 mb-1">
                 {new Date(transaction.date).toLocaleDateString()}
               </p>
-              <p className={`text-lg font-semibold ${transaction.amount < 0 ? 'text-blue-600' : 'text-green-600'}`}>
+              <p className={`text-lg font-semibold ${transaction.amount < 0 ? 'text-green-600' : 'text-red-600'}`}>
                 ${Math.abs(transaction.amount).toFixed(2)}
               </p>
               {transaction.pending && (
