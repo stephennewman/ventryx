@@ -14,10 +14,15 @@ interface TransactionDrawerProps {
 const TransactionDrawer: React.FC<TransactionDrawerProps> = ({ transaction, isOpen, onClose, transactions }) => {
   const [aiInsight, setAiInsight] = useState<string>('');
   const [isLoadingInsight, setIsLoadingInsight] = useState(false);
+  const [quickTip, setQuickTip] = useState<string>('');
+  const [isLoadingQuickTip, setIsLoadingQuickTip] = useState(false);
 
   useEffect(() => {
     if (transaction && isOpen) {
+      setAiInsight('');
+      setQuickTip('');
       generateInsight();
+      generateQuickTip();
     }
   }, [transaction, isOpen]);
 
@@ -106,6 +111,32 @@ Keep the tone friendly and focus on actionable opportunities to save money or ge
     }
   };
 
+  const generateQuickTip = async () => {
+    if (!transaction) return;
+    setIsLoadingQuickTip(true);
+    try {
+      const merchant = transaction.merchant_name || transaction.name;
+      const messages = [{
+        role: 'user',
+        content: `Write a witty, useful, and emoji-filled one-liner about a $${Math.abs(transaction.amount)} transaction at ${merchant}. Make it clever and practically insightful. Max 140 characters. Do not include hashtags.`
+      }];
+
+      const response = await fetch(`${API_URL}/openai/chat-with-transactions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages, transactions: [] }),
+      });
+
+      const data = await response.json();
+      const reply = data?.message || data?.reply || '';
+      setQuickTip(reply);
+    } catch (error) {
+      console.error('Error generating quick tip:', error);
+    } finally {
+      setIsLoadingQuickTip(false);
+    }
+  };
+
   const calculateMerchantStats = () => {
     if (!transaction || !transactions) return null;
 
@@ -165,6 +196,13 @@ Keep the tone friendly and focus on actionable opportunities to save money or ge
         {/* Content */}
         <div className="p-6 space-y-6 text-left">
           <div>
+            <div className="flex items-center mb-2">
+              <span 
+                className={`px-3 py-1 text-sm rounded-full ${transaction.amount < 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}
+              >
+                {transaction.amount < 0 ? '← Incoming' : '→ Outgoing'}
+              </span>
+            </div>
             <h3 className="text-lg font-semibold text-left">{transaction.merchant_name || transaction.name}</h3>
             <p className={`text-2xl font-bold text-left ${transaction.amount < 0 ? 'text-green-600' : 'text-red-600'}`}>
               ${Math.abs(transaction.amount).toFixed(2)}
@@ -172,29 +210,37 @@ Keep the tone friendly and focus on actionable opportunities to save money or ge
           </div>
 
           <div className="space-y-4">
-            {stats && (
-              <div className="bg-gray-50 rounded-lg p-4 space-y-2">
-                <label className="text-sm text-gray-600 block font-medium">Analysis Last {stats.daysSinceFirst} Days</label>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm text-gray-600">Total Spent</p>
-                    <p className="text-lg font-semibold">${stats.totalSpent.toFixed(2)}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600">Avg. Transaction</p>
-                    <p className="text-lg font-semibold">${stats.averageSpent.toFixed(2)}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600">Avg. Monthly Spend</p>
-                    <p className="text-lg font-semibold">${stats.monthlyAverage.toFixed(2)}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600">Frequency</p>
-                    <p className="text-lg font-semibold">{stats.frequency} times</p>
-                  </div>
+          <div className="bg-white rounded-lg p-3 text-sm text-purple-700 font-medium border border-purple-200 shadow min-h-[48px] flex items-center">
+            {isLoadingQuickTip ? (
+              <span className="text-gray-400 italic">Generating something clever...</span>
+            ) : (
+              quickTip
+            )}
+          </div>
+
+          {stats && (
+            <div className="bg-gray-50 rounded-lg p-4 space-y-2">
+              <label className="text-sm text-gray-600 block font-medium">Analysis Last {stats.daysSinceFirst} Days</label>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-gray-600">Total Spent</p>
+                  <p className="text-lg font-semibold">${stats.totalSpent.toFixed(2)}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Avg. Transaction</p>
+                  <p className="text-lg font-semibold">${stats.averageSpent.toFixed(2)}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Avg. Monthly Spend</p>
+                  <p className="text-lg font-semibold">${stats.monthlyAverage.toFixed(2)}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Frequency</p>
+                  <p className="text-lg font-semibold">{stats.frequency} times</p>
                 </div>
               </div>
-            )}
+            </div>
+          )}
 
             {aiInsight && (
               <div className="bg-purple-50 rounded-lg p-4">
@@ -234,7 +280,7 @@ Keep the tone friendly and focus on actionable opportunities to save money or ge
                   {transaction.category.map((category, index) => (
                     <span 
                       key={index}
-                      className="px-2 py-1 bg-gradient-to-r from-purple-100 via-pink-100 to-blue-100 text-purple-900 text-sm rounded-full"
+                      className="px-2 py-1 bg-gray-100 text-gray-800 text-sm rounded-full"
                     >
                       {category}
                     </span>
