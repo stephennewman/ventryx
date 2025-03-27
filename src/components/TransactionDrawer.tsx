@@ -165,8 +165,15 @@ Keep the tone friendly and focus on actionable opportunities to save money or ge
         {/* Content */}
         <div className="p-6 space-y-6 text-left">
           <div>
+            <div className="flex items-center mb-2">
+              <span 
+                className={`px-3 py-1 text-sm rounded-full ${transaction.amount < 0 ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'}`}
+              >
+                {transaction.amount < 0 ? '↓ Expense' : '↑ Income'}
+              </span>
+            </div>
             <h3 className="text-lg font-semibold text-left">{transaction.merchant_name || transaction.name}</h3>
-            <p className={`text-2xl font-bold text-left ${transaction.amount < 0 ? 'text-green-600' : 'text-red-600'}`}>
+            <p className={`text-2xl font-bold text-left ${transaction.amount < 0 ? 'text-green-600' : 'text-blue-600'}`}>
               ${Math.abs(transaction.amount).toFixed(2)}
             </p>
           </div>
@@ -234,7 +241,7 @@ Keep the tone friendly and focus on actionable opportunities to save money or ge
                   {transaction.category.map((category, index) => (
                     <span 
                       key={index}
-                      className="px-2 py-1 bg-gradient-to-r from-purple-100 via-pink-100 to-blue-100 text-purple-900 text-sm rounded-full"
+                      className="px-2 py-1 bg-gray-100 text-gray-800 text-sm rounded-full"
                     >
                       {category}
                     </span>

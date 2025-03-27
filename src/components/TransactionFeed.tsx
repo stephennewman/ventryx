@@ -196,7 +196,7 @@ const TransactionFeed: React.FC<TransactionFeedProps> = ({ transactions, selecte
           onClick={() => handleTransactionClick(transaction)}
         >
           <div
-            className={`absolute inset-y-0 left-0 ${transaction.amount < 0 ? 'bg-purple-100' : 'bg-pink-100'} opacity-20`}
+            className={`absolute inset-y-0 left-0 ${transaction.amount < 0 ? 'bg-green-100' : 'bg-blue-100'} opacity-20`}
             style={{ width: `${(Math.abs(transaction.amount) / maxFilteredTransactionAmount) * 100}%` }}
           />
           <div className="flex justify-between items-center relative">
@@ -214,17 +214,17 @@ const TransactionFeed: React.FC<TransactionFeedProps> = ({ transactions, selecte
                 {transaction.amount < 0 && (
                   <span
                     onClick={(e) => { e.stopPropagation(); handleCategoryClick('$'); }}
-                    className="px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded-full ml-2 cursor-pointer"
+                    className="px-3 py-1 bg-green-100 text-green-800 text-xs rounded-full ml-2 cursor-pointer flex items-center"
                   >
-                    $
+                    <span className="font-bold mr-1">↓</span> Expense
                   </span>
                 )}
                 {transaction.amount > 0 && (
                   <span
                     onClick={(e) => { e.stopPropagation(); handleCategoryClick('-$'); }}
-                    className="px-2 py-1 bg-pink-100 text-pink-800 text-xs rounded-full ml-2 cursor-pointer"
+                    className="px-3 py-1 bg-blue-100 text-blue-800 text-xs rounded-full ml-2 cursor-pointer flex items-center"
                   >
-                    -$
+                    <span className="font-bold mr-1">↑</span> Income
                   </span>
                 )}
                 {transaction.category && transaction.amount >= 0 && (
@@ -246,7 +246,7 @@ const TransactionFeed: React.FC<TransactionFeedProps> = ({ transactions, selecte
               <p className="text-sm text-gray-600 mb-1">
                 {new Date(transaction.date).toLocaleDateString()}
               </p>
-              <p className={`text-lg font-semibold ${transaction.amount < 0 ? 'text-purple-600' : 'text-pink-600'}`}>
+              <p className={`text-lg font-semibold ${transaction.amount < 0 ? 'text-green-600' : 'text-blue-600'}`}>
                 ${Math.abs(transaction.amount).toFixed(2)}
               </p>
               {transaction.pending && (
