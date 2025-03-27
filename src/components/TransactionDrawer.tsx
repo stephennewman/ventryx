@@ -167,13 +167,13 @@ Keep the tone friendly and focus on actionable opportunities to save money or ge
           <div>
             <div className="flex items-center mb-2">
               <span 
-                className={`px-3 py-1 text-sm rounded-full ${transaction.amount < 0 ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'}`}
+                className={`px-3 py-1 text-sm rounded-full ${transaction.amount < 0 ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'}`}
               >
-                {transaction.amount < 0 ? '↓ Expense' : '↑ Income'}
+                {transaction.amount < 0 ? '↓ Outgoing' : '↑ Incoming'}
               </span>
             </div>
             <h3 className="text-lg font-semibold text-left">{transaction.merchant_name || transaction.name}</h3>
-            <p className={`text-2xl font-bold text-left ${transaction.amount < 0 ? 'text-green-600' : 'text-blue-600'}`}>
+            <p className={`text-2xl font-bold text-left ${transaction.amount < 0 ? 'text-blue-600' : 'text-green-600'}`}>
               ${Math.abs(transaction.amount).toFixed(2)}
             </p>
           </div>
