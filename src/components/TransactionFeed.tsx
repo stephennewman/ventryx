@@ -216,7 +216,7 @@ const TransactionFeed: React.FC<TransactionFeedProps> = ({ transactions, selecte
                     onClick={(e) => { e.stopPropagation(); handleCategoryClick('$'); }}
                     className="px-3 py-1 bg-blue-100 text-blue-800 text-xs rounded-full ml-2 cursor-pointer flex items-center"
                   >
-                    <span className="font-bold mr-1">↓</span> Outgoing
+                    <span className="font-bold mr-1">↓</span> Incoming
                   </span>
                 )}
                 {transaction.amount > 0 && (
@@ -224,7 +224,7 @@ const TransactionFeed: React.FC<TransactionFeedProps> = ({ transactions, selecte
                     onClick={(e) => { e.stopPropagation(); handleCategoryClick('-$'); }}
                     className="px-3 py-1 bg-green-100 text-green-800 text-xs rounded-full ml-2 cursor-pointer flex items-center"
                   >
-                    <span className="font-bold mr-1">↑</span> Incoming
+                    <span className="font-bold mr-1">↑</span> Outgoing
                   </span>
                 )}
                 {transaction.category && transaction.amount >= 0 && (

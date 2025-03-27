@@ -169,7 +169,7 @@ Keep the tone friendly and focus on actionable opportunities to save money or ge
               <span 
                 className={`px-3 py-1 text-sm rounded-full ${transaction.amount < 0 ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'}`}
               >
-                {transaction.amount < 0 ? '↓ Outgoing' : '↑ Incoming'}
+                {transaction.amount < 0 ? '↓ Incoming' : '↑ Outgoing'}
               </span>
             </div>
             <h3 className="text-lg font-semibold text-left">{transaction.merchant_name || transaction.name}</h3>
