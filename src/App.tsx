@@ -686,7 +686,7 @@ const App: React.FC = () => {
                                 </div>
                                 
                                 <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-lg p-4">
-                                  <p className="text-sm text-gray-600 mb-1">Adaptive Budget</p>
+                                  <p className="text-sm text-gray-600 mb-1">Avg. Monthly Spend</p>
                                   <h4 className="text-2xl font-bold text-blue-600">
                                     ${(() => {
                                       // Calculate total adaptive budget for the month
