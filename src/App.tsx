@@ -667,7 +667,7 @@ const App: React.FC = () => {
                               <div className="grid grid-cols-3 gap-4 mb-6">
                                 <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-lg p-4">
                                   <p className="text-sm text-gray-600 mb-1">Monthly Income</p>
-                                  <h4 className="text-2xl font-bold text-green-600">${monthlyMetrics.income.toFixed(2)}</h4>
+                                  <h4 className="text-2xl font-bold text-green-600">${Math.round(monthlyMetrics.income)}</h4>
                                   <div className="flex items-center mt-2">
                                     <span className="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded-full">
                                       {accounts.length} connected {accounts.length === 1 ? 'account' : 'accounts'}
@@ -677,7 +677,7 @@ const App: React.FC = () => {
                                 
                                 <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-lg p-4">
                                   <p className="text-sm text-gray-600 mb-1">Monthly Expenses</p>
-                                  <h4 className="text-2xl font-bold text-purple-600">${monthlyMetrics.expenses.toFixed(2)}</h4>
+                                  <h4 className="text-2xl font-bold text-purple-600">${Math.round(monthlyMetrics.expenses)}</h4>
                                   <div className="flex items-center mt-2">
                                     <span className="text-xs bg-purple-100 text-purple-800 px-2 py-0.5 rounded-full">
                                       {monthlyMetrics.expensePercentage.toFixed(0)}% of income
@@ -692,7 +692,7 @@ const App: React.FC = () => {
                                       // Calculate total adaptive budget for the month
                                       const categories = calculateCategorySpending();
                                       const totalAdaptiveBudget = categories.reduce((sum, cat) => sum + cat.adaptiveBudget, 0);
-                                      return totalAdaptiveBudget.toFixed(2);
+                                      return Math.round(totalAdaptiveBudget);
                                     })()}
                                   </h4>
                                   <div className="flex items-center mt-2">
