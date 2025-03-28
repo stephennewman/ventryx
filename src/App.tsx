@@ -204,17 +204,6 @@ const App: React.FC = () => {
   const MainContent = () => (
     <div className="min-h-screen bg-gradient-to-br from-white via-blue-50 to-purple-50">
       <div className="max-w-6xl mx-auto p-6">
-        {(userStateLoading || user) && (
-          <div className="text-center mb-8">
-            <img
-              src="https://blog.krezzo.com/hs-fs/hubfs/Krezzo-Logo-2023-Light.png?width=3248&height=800&name=Krezzo-Logo-2023-Light.png"
-              alt="Krezzo Logo"
-              className="mx-auto mb-2"
-              style={{ width: '200px', height: 'auto' }}
-            />
-          </div>
-        )}
-
         {userStateLoading ? (
           <div className="text-center py-8">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
@@ -223,9 +212,39 @@ const App: React.FC = () => {
         ) : user ? (
           hasCompletedOnboarding ? (
             <div className="space-y-6">
+              <div className="flex items-center justify-between mb-2">
+                {/* Remove the empty div and user profile from the top bar */}
+              </div>
+              
               <div className="bg-white rounded-lg shadow p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center space-x-4">
+                <div className="flex justify-between items-center mb-6">
+                  {/* Logo on left */}
+                  <div>
+                    <img
+                      src="https://blog.krezzo.com/hs-fs/hubfs/Krezzo-Logo-2023-Light.png?width=3248&height=800&name=Krezzo-Logo-2023-Light.png"
+                      alt="Krezzo Logo"
+                      style={{ width: '180px', height: 'auto' }}
+                    />
+                  </div>
+                  
+                  {/* User profile on right */}
+                  <div className="flex items-center">
+                    <div className="text-right mr-4">
+                      <div className="relative group inline-block">
+                        <div>
+                          <h2 className="text-xl font-semibold">{user.displayName}</h2>
+                          <p className="text-gray-600">{user.email}</p>
+                        </div>
+                        <div className="absolute top-full right-0 mt-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                          <button
+                            onClick={logOut}
+                            className="text-sm text-purple-600 bg-white px-3 py-1 rounded shadow hover:bg-purple-50"
+                          >
+                            Sign Out
+                          </button>
+                        </div>
+                      </div>
+                    </div>
                     {user.photoURL ? (
                       <img src={user.photoURL} alt="User Avatar" className="w-12 h-12 rounded-full" />
                     ) : (
@@ -233,31 +252,19 @@ const App: React.FC = () => {
                         {user.displayName ? user.displayName.charAt(0).toUpperCase() : 'U'}
                       </div>
                     )}
-                      <div className="text-left sticky top-6 z-10 bg-white p-2 rounded">
-                        <div className="relative group inline-block">
-                          <div>
-                            <h2 className="text-xl font-semibold">{user.displayName}</h2>
-                            <p className="text-gray-600">{user.email}</p>
-                          </div>
-                          <div className="absolute top-full left-0 mt-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                            <button
-                              onClick={logOut}
-                              className="text-sm text-purple-600 bg-white px-3 py-1 rounded shadow hover:bg-purple-50"
-                            >
-                              Sign Out
-                            </button>
-                          </div>
-                        </div>
-                      </div>
                   </div>
-
-                  <button
-                    onClick={() => ready && open()}
-                    disabled={!ready || !linkToken || isLoading}
-                    className="font-semibold px-6 py-3 rounded-lg shadow text-white bg-gradient-to-r from-purple-500 via-pink-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {isLoading ? 'Loading...' : (accounts?.length || 0) > 0 ? ' Connected • Add Another Account' : 'Connect Your Bank Account'}
-                  </button>
+                </div>
+                
+                <div className="flex items-center justify-between mb-4">
+                  {(accounts?.length || 0) === 0 && (
+                    <button
+                      onClick={() => ready && open()}
+                      disabled={!ready || !linkToken || isLoading}
+                      className="font-semibold px-6 py-3 rounded-lg shadow text-white bg-gradient-to-r from-purple-500 via-pink-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 transition disabled:opacity-50 disabled:cursor-not-allowed ml-auto"
+                    >
+                      {isLoading ? 'Loading...' : 'Connect Your Bank Account'}
+                    </button>
+                  )}
                 </div>
 
                 {error && (
@@ -291,6 +298,24 @@ const App: React.FC = () => {
                           <p className="text-xl font-bold text-left">${account.balances.current?.toFixed(2)}</p>
                         </div>
                       ))}
+
+                      {(accounts?.length || 0) > 0 && (
+                        <button
+                          onClick={() => ready && open()}
+                          disabled={!ready || !linkToken || isLoading}
+                          className="w-full bg-white p-4 rounded-lg shadow-md text-left border-2 border-dashed border-purple-200 hover:border-purple-400 transition-colors"
+                        >
+                          <div className="flex items-center">
+                            <div className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-500 via-pink-500 to-blue-500 flex items-center justify-center text-white mr-3">
+                              <span className="text-xl font-bold">+</span>
+                            </div>
+                            <div>
+                              <h3 className="text-lg font-semibold text-purple-700">Connected</h3>
+                              <p className="text-sm text-gray-600">Add Another Account</p>
+                            </div>
+                          </div>
+                        </button>
+                      )}
                     </div>
 
                     <div className="w-2/3">
