@@ -226,8 +226,12 @@ const App: React.FC = () => {
               <div className="bg-white rounded-lg shadow p-6">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center space-x-4">
-                    {user.photoURL && (
+                    {user.photoURL ? (
                       <img src={user.photoURL} alt="User Avatar" className="w-12 h-12 rounded-full" />
+                    ) : (
+                      <div className="w-12 h-12 rounded-full bg-gradient-to-r from-purple-500 to-blue-500 flex items-center justify-center text-white text-xl font-semibold">
+                        {user.displayName ? user.displayName.charAt(0).toUpperCase() : 'U'}
+                      </div>
                     )}
                       <div className="text-left sticky top-6 z-10 bg-white p-2 rounded">
                         <div className="relative group inline-block">

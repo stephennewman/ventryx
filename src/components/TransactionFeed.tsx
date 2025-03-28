@@ -13,8 +13,8 @@ interface TransactionFeedProps {
 
 // Custom input component for the date picker
 const CustomDateInput = React.forwardRef<HTMLButtonElement, React.ComponentProps<'button'>>(({ onClick }, ref) => (
-  <button className="p-2 border rounded flex items-center" onClick={onClick} ref={ref}>
-    <FaCalendarAlt className="mr-2 text-purple-600" />
+  <button className="p-2 border rounded flex items-center justify-center" onClick={onClick} ref={ref}>
+    <FaCalendarAlt className="text-purple-600" />
   </button>
 ));
 
@@ -127,23 +127,6 @@ const TransactionFeed: React.FC<TransactionFeedProps> = ({ transactions, selecte
 
   return (
     <div className="space-y-4">
-      {withdrawalCount > 0 && (
-        <div className="p-4 rounded-lg shadow-md flex justify-between items-start bg-gradient-to-r from-purple-50 via-pink-50 to-blue-50">
-          <div className="text-left">
-            {lastXDays > 0 && (
-              <p className="text-sm text-gray-700">Days Analyzed: {lastXDays}</p>
-            )}
-            <p className="text-sm text-gray-700"># of Transactions: {withdrawalCount}</p>
-            <p className="text-sm text-gray-700"># of Unique Vendors: {uniqueVendors}</p>
-            <p className="text-sm text-gray-700">Average Transaction: ${withdrawalCount > 0 ? (totalWithdrawalAmount / withdrawalCount).toFixed(2) : '0.00'}</p>
-            <p className="text-sm text-gray-700">Average Weekly Spend: ${averageWeeklyExpense.toFixed(2)}</p>
-            <p className="text-sm text-gray-700">Average Monthly Spend: ${averageMonthlyExpense.toFixed(2)}</p>
-          </div>
-          <div className="text-right">
-            <h4 className="text-lg font-semibold text-red-800">Total Spend: ${totalWithdrawalAmount.toFixed(2)}</h4>
-          </div>
-        </div>
-      )}
       <div className="flex flex-wrap items-center gap-4 mb-4">
         <input
           type="text"
@@ -169,15 +152,17 @@ const TransactionFeed: React.FC<TransactionFeedProps> = ({ transactions, selecte
             <FaChevronDown />
           </div>
         </div>
-        <DatePicker
-          selectsRange={true}
-          startDate={startDate}
-          endDate={endDate}
-          onChange={(update) => setDateRange(update)}
-          isClearable={true}
-          customInput={<CustomDateInput />}
-          popperClassName="z-50"
-        />
+        <div className="ml-auto">
+          <DatePicker
+            selectsRange={true}
+            startDate={startDate}
+            endDate={endDate}
+            onChange={(update) => setDateRange(update)}
+            isClearable={true}
+            customInput={<CustomDateInput />}
+            popperClassName="z-50"
+          />
+        </div>
       </div>
       {selectedCategory || selectedVendor || selectedAccountId ? (
         <div className="p-2 border rounded mb-4">
