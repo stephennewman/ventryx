@@ -574,7 +574,7 @@ Write in a natural, conversational tone that sounds like something a thoughtful 
                           {/* Inner white circle to create donut effect */}
                           <div className="absolute inset-0 m-3 rounded-full bg-white flex items-center justify-center">
                             <div className="text-center">
-                              <span className="text-lg font-bold text-blue-900">{stats.percentOfIncome.toFixed(1)}%</span>
+                              <span className="text-lg font-bold text-blue-900">{Math.min(stats.percentOfIncome, 100).toFixed(1)}%</span>
                               <p className="text-xs text-blue-700">of total income</p>
                             </div>
                           </div>
@@ -583,7 +583,7 @@ Write in a natural, conversational tone that sounds like something a thoughtful 
                     </div>
                     
                     <div className="mt-3 text-sm text-blue-700 bg-blue-100 p-3 rounded-lg">
-                      This source provides approximately ${(stats.annualPacing / 12).toFixed(2)} per month (${stats.annualPacing.toFixed(2)} annually), representing {stats.percentOfIncome.toFixed(2)}% of your total income.
+                      This source provides approximately ${(stats.annualPacing / 12).toFixed(2)} per month (${stats.annualPacing.toFixed(2)} annually), representing {stats.percentOfIncome > 100 ? '100+' : stats.percentOfIncome.toFixed(2)}% of your total income.
                     </div>
                   </>
                 ) : (
@@ -615,7 +615,7 @@ Write in a natural, conversational tone that sounds like something a thoughtful 
                           {/* Inner white circle to create donut effect */}
                           <div className="absolute inset-0 m-3 rounded-full bg-white flex items-center justify-center">
                             <div className="text-center">
-                              <span className="text-lg font-bold text-blue-900">{stats.percentOfIncome.toFixed(1)}%</span>
+                              <span className="text-lg font-bold text-blue-900">{Math.min(stats.percentOfIncome, 100).toFixed(1)}%</span>
                               <p className="text-xs text-blue-700">of monthly income</p>
                             </div>
                           </div>
@@ -661,7 +661,7 @@ Write in a natural, conversational tone that sounds like something a thoughtful 
                     )}
                     
                     <div className="mt-3 text-sm text-blue-700 bg-blue-100 p-3 rounded-lg">
-                      If you continue this spending pattern, you'll spend about ${(stats.annualPacing / 12).toFixed(2)} monthly (${stats.annualPacing.toFixed(2)} annually) at {transaction.merchant_name || transaction.name}, which is {stats.percentOfIncome.toFixed(2)}% of your income.
+                      If you continue this spending pattern, you'll spend about ${(stats.annualPacing / 12).toFixed(2)} monthly (${stats.annualPacing.toFixed(2)} annually) at {transaction.merchant_name || transaction.name}, which is {stats.percentOfIncome > 100 ? '100+' : stats.percentOfIncome.toFixed(2)}% of your income.
                       {stats.hasCategory && stats.category && 
                         ` This transaction is in the "${stats.category.name}" category, which accounts for ${stats.category.count} transactions in your history.`
                       }
