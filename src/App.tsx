@@ -35,6 +35,48 @@ window.clearAccountFilter = () => {
   // This will be set properly inside the component
 };
 
+// Define types for budget calculations
+interface MonthlyMetrics {
+  income: number;
+  expenses: number;
+  savings: number;
+  expensePercentage: number;
+  savingsPercentage: number;
+}
+
+interface CategoryData {
+  total: number;
+  transactions: Transaction[];
+}
+
+interface CategorySpending {
+  name: string;
+  totalSpent: number;
+  currentMonthSpent: number;
+  transactionCount: number;
+  percentage: number;
+  // Adaptive budget fields
+  historicalAvgSpend: number;
+  recentTrendSpend: number;
+  adaptiveBudget: number;
+  trendPercentage: number; // +/- percentage showing change in spending habits
+}
+
+interface BudgetProgress {
+  name: string;
+  spent: number;
+  budget: number;
+  adaptiveBudget: number;
+  historicalAverage: number;
+  spentPercentage: number;
+  adaptivePercentage: number;
+  expectedSpendingPercentage: number;
+  isOverPace: boolean;
+  isUnderPace: boolean;
+  trendDirection: 'increasing' | 'decreasing' | 'stable';
+  trendPercentage: number;
+}
+
 const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState<boolean>(false);
@@ -50,7 +92,7 @@ const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'account' | 'budget'>('account');
 
   // Add helper functions for budget calculations
-  const calculateMonthlyMetrics = () => {
+  const calculateMonthlyMetrics = (): MonthlyMetrics | null => {
     if (!transactions.length) return null;
     
     const now = new Date();
@@ -87,7 +129,7 @@ const App: React.FC = () => {
     };
   };
 
-  const calculateCategorySpending = () => {
+  const calculateCategorySpending = (): CategorySpending[] => {
     if (!transactions.length) return [];
     
     const now = new Date();
@@ -98,14 +140,14 @@ const App: React.FC = () => {
     const expenseTransactions = transactions.filter(t => t.amount > 0);
     
     // Group by category
-    const categories = new Map();
+    const categories = new Map<string, CategoryData>();
     
     expenseTransactions.forEach(t => {
       const category = t.category && t.category.length > 0 ? t.category[0] : 'Uncategorized';
       if (!categories.has(category)) {
         categories.set(category, { total: 0, transactions: [] });
       }
-      const categoryData = categories.get(category);
+      const categoryData = categories.get(category) as CategoryData;
       categoryData.total += t.amount;
       categoryData.transactions.push(t);
       categories.set(category, categoryData);
@@ -114,18 +156,64 @@ const App: React.FC = () => {
     // Convert to array and sort by total amount
     const categoryArray = Array.from(categories.entries()).map(([name, data]) => {
       // Get current month data
-      const currentMonthTransactions = data.transactions.filter(t => {
+      const currentMonthTransactions = data.transactions.filter((t: Transaction) => {
         const txDate = new Date(t.date);
         return txDate.getMonth() === currentMonth && txDate.getFullYear() === currentYear;
       });
       
-      const currentMonthTotal = currentMonthTransactions.reduce((sum, t) => sum + t.amount, 0);
+      const currentMonthTotal = currentMonthTransactions.reduce((sum: number, t: Transaction) => sum + t.amount, 0);
+      
+      // Calculate historical monthly averages
+      const txDates = data.transactions.map(t => new Date(t.date));
+      const oldestDate = new Date(Math.min(...txDates.map(d => d.getTime())));
+      
+      // Calculate months between oldest transaction and now
+      const monthsDiff = (now.getMonth() - oldestDate.getMonth()) + 
+                        (12 * (now.getFullYear() - oldestDate.getFullYear()));
+      
+      // Ensure at least 1 month to avoid division by zero
+      const monthsSpan = Math.max(1, monthsDiff);
+      
+      // Historical average monthly spend
+      const historicalAvgSpend = data.total / monthsSpan;
+      
+      // Calculate recent trend (last 3 months)
+      const threeMonthsAgo = new Date(now);
+      threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+      
+      const recentTransactions = data.transactions.filter(t => {
+        const txDate = new Date(t.date);
+        return txDate >= threeMonthsAgo;
+      });
+      
+      // Calculate recent monthly average
+      const recentTotal = recentTransactions.reduce((sum, t) => sum + t.amount, 0);
+      const recentMonths = Math.min(3, monthsSpan);
+      const recentTrendSpend = recentTotal / recentMonths;
+      
+      // Calculate adaptive budget - weights recent trends more heavily
+      // 70% recent trend, 30% historical average if we have at least 3 months of data
+      // Otherwise more weight to historical as we have less recent data
+      const recentWeight = Math.min(0.7, recentMonths / 4); // Scales from 0.25 to 0.7 max
+      const historicalWeight = 1 - recentWeight;
+      
+      const adaptiveBudget = (recentTrendSpend * recentWeight) + (historicalAvgSpend * historicalWeight);
+      
+      // Calculate trend percentage (how much is spending trending up or down)
+      const trendPercentage = historicalAvgSpend > 0 
+        ? ((recentTrendSpend - historicalAvgSpend) / historicalAvgSpend) * 100 
+        : 0;
       
       return {
         name,
         totalSpent: data.total,
         currentMonthSpent: currentMonthTotal,
-        transactionCount: data.transactions.length
+        transactionCount: data.transactions.length,
+        historicalAvgSpend,
+        recentTrendSpend,
+        adaptiveBudget,
+        trendPercentage,
+        percentage: 0 // Will calculate after we get totals
       };
     }).sort((a, b) => b.currentMonthSpent - a.currentMonthSpent);
     
@@ -138,7 +226,7 @@ const App: React.FC = () => {
     }));
   };
 
-  const calculateBudgetProgress = () => {
+  const calculateBudgetProgress = (): BudgetProgress[] => {
     if (!transactions.length) return [];
     
     const now = new Date();
@@ -150,12 +238,11 @@ const App: React.FC = () => {
     // Calculate expected spending percentage
     const expectedSpendingPercentage = (daysPassed / daysInMonth) * 100;
     
-    // Get category data
+    // Get category data with adaptive budgets
     const categories = calculateCategorySpending();
     
-    // Define some basic budget limits based on historical data
-    // In a real app, these would be user-defined or calculated from past spending
-    const budgetLimits = {
+    // Set up basic budget limits as a fallback
+    const defaultBudgets: Record<string, number> = {
       'Food and Drink': 800,
       'Travel': 500,
       'Entertainment': 400,
@@ -163,49 +250,52 @@ const App: React.FC = () => {
       'Transportation': 900
     };
     
-    // For any categories without explicit budgets, estimate from historical data
-    // Here we're using 1.1x the average monthly spending for that category
+    // Create a record of adaptive budgets
+    const adaptiveBudgets: Record<string, number> = {};
+    
+    // Fill adaptive budgets from our calculations
     categories.forEach(category => {
-      if (!budgetLimits[category.name]) {
-        // Get transactions for this category
-        const catTransactions = transactions.filter(t => 
-          t.category && t.category.length > 0 && t.category[0] === category.name && t.amount > 0
-        );
-        
-        if (catTransactions.length) {
-          // Calculate average monthly spending
-          const catDates = catTransactions.map(t => new Date(t.date).getTime());
-          const firstDate = new Date(Math.min(...catDates));
-          const monthDiff = (now.getMonth() - firstDate.getMonth()) + 
-                            (12 * (now.getFullYear() - firstDate.getFullYear()));
-                              
-          const avgMonthly = monthDiff > 0 ? 
-            category.totalSpent / monthDiff : 
-            category.totalSpent;
-            
-          budgetLimits[category.name] = avgMonthly * 1.1; // 10% buffer
-        }
-      }
+      adaptiveBudgets[category.name] = category.adaptiveBudget;
     });
     
     // Filter for top categories with spending and budget data
     return categories
-      .filter(cat => budgetLimits[cat.name] && cat.currentMonthSpent > 0)
+      .filter(cat => (adaptiveBudgets[cat.name] || defaultBudgets[cat.name] || 0) > 0 && cat.currentMonthSpent > 0)
       .slice(0, 3) // Top 3 categories
       .map(category => {
-        const budget = budgetLimits[category.name];
+        // Use the adaptive budget or fall back to default
+        const adaptiveBudget = adaptiveBudgets[category.name] || 0;
+        const fallbackBudget = defaultBudgets[category.name] || 0;
+        
+        // If we have an adaptive budget use it, otherwise fall back to default
+        const budget = adaptiveBudget > 0 ? adaptiveBudget : fallbackBudget;
+        
+        // Calculate percentages
         const spentPercentage = (category.currentMonthSpent / budget) * 100;
+        const adaptivePercentage = adaptiveBudget > 0 ? (category.currentMonthSpent / adaptiveBudget) * 100 : 0;
+        
+        // Determine pace
         const isOverPace = spentPercentage > expectedSpendingPercentage * 1.1; // 10% over expected pace
         const isUnderPace = spentPercentage < expectedSpendingPercentage * 0.9; // 10% under expected pace
+        
+        // Determine trend direction
+        let trendDirection: 'increasing' | 'decreasing' | 'stable' = 'stable';
+        if (category.trendPercentage > 5) trendDirection = 'increasing';
+        else if (category.trendPercentage < -5) trendDirection = 'decreasing';
         
         return {
           name: category.name,
           spent: category.currentMonthSpent,
-          budget,
+          budget: budget,
+          adaptiveBudget: adaptiveBudget,
+          historicalAverage: category.historicalAvgSpend,
           spentPercentage,
+          adaptivePercentage,
           expectedSpendingPercentage,
           isOverPace,
-          isUnderPace
+          isUnderPace,
+          trendDirection,
+          trendPercentage: category.trendPercentage
         };
       });
   };
@@ -693,7 +783,7 @@ const App: React.FC = () => {
                           return (
                             <div className="bg-white rounded-xl shadow-sm border border-purple-100 p-5">
                               <div className="flex justify-between items-center mb-4">
-                                <h3 className="text-lg font-semibold text-gray-800">Budget Progress</h3>
+                                <h3 className="text-lg font-semibold text-gray-800">Adaptive Budget Progress</h3>
                                 <div className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
                                   Day {daysPassed} of {daysInMonth}
                                 </div>
@@ -703,12 +793,27 @@ const App: React.FC = () => {
                                 {budgetProgress.map(category => (
                                   <div className="space-y-2" key={category.name}>
                                     <div className="flex justify-between items-center">
-                                      <span className="font-medium text-sm">{category.name}</span>
+                                      <div className="flex items-center">
+                                        <span className="font-medium text-sm">{category.name}</span>
+                                        {category.trendDirection !== 'stable' && (
+                                          <span className={`ml-2 text-xs px-1.5 py-0.5 rounded-full ${
+                                            category.trendDirection === 'increasing' 
+                                              ? 'bg-yellow-100 text-yellow-800' 
+                                              : 'bg-green-100 text-green-800'
+                                          }`}>
+                                            {category.trendDirection === 'increasing' 
+                                              ? `↑ ${Math.abs(category.trendPercentage).toFixed(0)}%` 
+                                              : `↓ ${Math.abs(category.trendPercentage).toFixed(0)}%`}
+                                          </span>
+                                        )}
+                                      </div>
                                       <div className="text-right">
                                         <span className="text-sm font-bold">${category.spent.toFixed(0)}</span>
-                                        <span className="text-sm text-gray-500"> / ${category.budget.toFixed(0)}</span>
+                                        <span className="text-sm text-gray-500"> / ${category.adaptiveBudget.toFixed(0)}</span>
                                       </div>
                                     </div>
+                                    
+                                    {/* Main progress bar */}
                                     <div className="relative h-3 bg-gray-100 rounded-full">
                                       <div 
                                         className={`absolute top-0 left-0 h-full rounded-l-full ${
@@ -721,14 +826,107 @@ const App: React.FC = () => {
                                         style={{ left: `${category.expectedSpendingPercentage}%` }}
                                       ></div>
                                     </div>
+                                    
                                     <div className="flex justify-between text-xs text-gray-500">
-                                      <span>On pace: {category.expectedSpendingPercentage.toFixed(0)}% should be spent by day {daysPassed}</span>
+                                      <span>Expected: {category.expectedSpendingPercentage.toFixed(0)}% by day {daysPassed}</span>
                                       <span className={category.isOverPace ? 'text-red-600 font-medium' : category.isUnderPace ? 'text-green-600 font-medium' : 'text-gray-600'}>
                                         {category.spentPercentage.toFixed(0)}% spent
                                       </span>
                                     </div>
+                                    
+                                    {/* Additional historical context */}
+                                    <div className="bg-gray-50 p-2 rounded text-xs mt-1">
+                                      <div className="flex justify-between mb-1">
+                                        <span className="text-gray-600">Historical Monthly Average:</span>
+                                        <span className="font-medium">${category.historicalAverage.toFixed(2)}</span>
+                                      </div>
+                                      <div className="flex justify-between">
+                                        <span className="text-gray-600">Adaptive Budget (Adjusted):</span>
+                                        <span className="font-medium">${category.adaptiveBudget.toFixed(2)}</span>
+                                      </div>
+                                    </div>
                                   </div>
                                 ))}
+                              </div>
+                            </div>
+                          );
+                        })()}
+                        
+                        {/* Adaptive Budget Insights Card */}
+                        {(() => {
+                          const categories = calculateCategorySpending();
+                          if (!categories.length) return null;
+                          
+                          // Sort categories by trend percentage to highlight biggest changes
+                          const trendingCategories = [...categories]
+                            .filter(cat => cat.historicalAvgSpend > 0 && Math.abs(cat.trendPercentage) > 5)
+                            .sort((a, b) => Math.abs(b.trendPercentage) - Math.abs(a.trendPercentage))
+                            .slice(0, 3);
+                          
+                          return (
+                            <div className="bg-white rounded-xl shadow-sm border border-purple-100 p-5 mt-6">
+                              <h3 className="text-lg font-semibold text-gray-800 mb-4">Spending Trend Analysis</h3>
+                              
+                              {trendingCategories.length > 0 ? (
+                                <div className="space-y-4">
+                                  {trendingCategories.map(category => (
+                                    <div 
+                                      key={category.name}
+                                      className={`p-3 rounded-lg ${
+                                        category.trendPercentage > 0
+                                          ? 'bg-gradient-to-br from-yellow-50 to-orange-50'
+                                          : 'bg-gradient-to-br from-green-50 to-blue-50'
+                                      }`}
+                                    >
+                                      <div className="flex items-center justify-between mb-2">
+                                        <h4 className="font-medium">{category.name}</h4>
+                                        <span className={`text-sm font-semibold px-2 py-0.5 rounded-full ${
+                                          category.trendPercentage > 0
+                                            ? 'bg-orange-100 text-orange-800'
+                                            : 'bg-green-100 text-green-800'
+                                        }`}>
+                                          {category.trendPercentage > 0 ? '↑' : '↓'} {Math.abs(category.trendPercentage).toFixed(0)}%
+                                        </span>
+                                      </div>
+                                      
+                                      <div className="grid grid-cols-2 gap-2 text-sm mb-2">
+                                        <div>
+                                          <p className="text-xs text-gray-500">Historical Average</p>
+                                          <p className="font-medium">${category.historicalAvgSpend.toFixed(2)}/mo</p>
+                                        </div>
+                                        <div>
+                                          <p className="text-xs text-gray-500">Recent Average</p>
+                                          <p className="font-medium">${category.recentTrendSpend.toFixed(2)}/mo</p>
+                                        </div>
+                                      </div>
+                                      
+                                      <p className="text-sm mt-1">
+                                        {category.trendPercentage > 0
+                                          ? `Your spending on ${category.name} has increased by ${Math.abs(category.trendPercentage).toFixed(0)}% compared to your historical average. Your adaptive budget has adjusted to ${category.adaptiveBudget.toFixed(2)}/mo.`
+                                          : `Your spending on ${category.name} has decreased by ${Math.abs(category.trendPercentage).toFixed(0)}% compared to your historical average. Your adaptive budget has adjusted to ${category.adaptiveBudget.toFixed(2)}/mo.`
+                                        }
+                                      </p>
+                                    </div>
+                                  ))}
+                                </div>
+                              ) : (
+                                <div className="bg-gray-50 p-4 rounded-lg text-center">
+                                  <p className="text-gray-600">Your spending patterns have been stable across categories.</p>
+                                </div>
+                              )}
+                              
+                              <div className="mt-4 p-3 bg-gradient-to-br from-purple-50 to-blue-50 rounded-lg">
+                                <div className="flex items-start">
+                                  <div className="flex-shrink-0 h-10 w-10 flex items-center justify-center bg-purple-100 text-purple-600 rounded-full mr-3">
+                                    <span className="text-lg">📊</span>
+                                  </div>
+                                  <div>
+                                    <h4 className="font-medium text-purple-700">About Adaptive Budgets</h4>
+                                    <p className="text-sm text-gray-700 mt-1">
+                                      Your adaptive budget automatically adjusts based on your spending patterns. It weighs recent trends (70%) against historical averages (30%) to provide a realistic budget that evolves with your habits.
+                                    </p>
+                                  </div>
+                                </div>
                               </div>
                             </div>
                           );
@@ -750,9 +948,12 @@ const App: React.FC = () => {
                           // Find underbudget categories
                           const underBudgetCategories = budgetProgress.filter(cat => cat.isUnderPace);
                           
+                          // Find categories with significant trend changes
+                          const changingCategories = budgetProgress.filter(cat => Math.abs(cat.trendPercentage) > 15);
+                          
                           return (
                             <div className="bg-white rounded-xl shadow-sm border border-purple-100 p-5">
-                              <h3 className="text-lg font-semibold text-gray-800 mb-4">Insights & Recommendations</h3>
+                              <h3 className="text-lg font-semibold text-gray-800 mb-4">Smart Financial Insights</h3>
                               
                               <div className="space-y-3">
                                 {/* Show warnings for over-budget categories */}
@@ -762,12 +963,38 @@ const App: React.FC = () => {
                                       <span className="text-lg">⚠️</span>
                                     </div>
                                     <div>
-                                      <h4 className="font-medium text-red-700">{overBudgetCategories[0].name} over budget</h4>
+                                      <h4 className="font-medium text-red-700">{overBudgetCategories[0].name} over adaptive budget</h4>
                                       <p className="text-sm text-gray-700 mt-1">
                                         You're spending too quickly on {overBudgetCategories[0].name} this month. 
-                                        At your current pace, you'll exceed your budget by 
-                                        ${((overBudgetCategories[0].spent / overBudgetCategories[0].expectedSpendingPercentage * 100) - overBudgetCategories[0].budget).toFixed(0)} 
+                                        At your current pace, you'll exceed your adaptive budget by 
+                                        ${((overBudgetCategories[0].spent / overBudgetCategories[0].expectedSpendingPercentage * 100) - overBudgetCategories[0].adaptiveBudget).toFixed(0)} 
                                         by month end.
+                                        {overBudgetCategories[0].trendDirection === 'increasing' && 
+                                          ` Note that your spending in this category has been trending up by ${Math.abs(overBudgetCategories[0].trendPercentage).toFixed(0)}% recently.`}
+                                      </p>
+                                    </div>
+                                  </div>
+                                )}
+                                
+                                {/* Highlight significant trend changes */}
+                                {changingCategories.length > 0 && changingCategories[0] !== overBudgetCategories[0] && (
+                                  <div className={`flex p-3 ${
+                                    changingCategories[0].trendDirection === 'increasing' 
+                                      ? 'bg-gradient-to-br from-yellow-50 to-orange-50' 
+                                      : 'bg-gradient-to-br from-blue-50 to-green-50'
+                                  } rounded-lg`}>
+                                    <div className="flex-shrink-0 h-10 w-10 flex items-center justify-center bg-blue-100 text-blue-600 rounded-full mr-3">
+                                      <span className="text-lg">📈</span>
+                                    </div>
+                                    <div>
+                                      <h4 className="font-medium text-blue-700">Spending pattern change detected</h4>
+                                      <p className="text-sm text-gray-700 mt-1">
+                                        Your {changingCategories[0].name} spending has {
+                                          changingCategories[0].trendDirection === 'increasing' ? 'increased' : 'decreased'
+                                        } by {Math.abs(changingCategories[0].trendPercentage).toFixed(0)}% compared to your historical average.
+                                        Your adaptive budget has automatically {
+                                          changingCategories[0].trendDirection === 'increasing' ? 'increased' : 'decreased'
+                                        } to ${changingCategories[0].adaptiveBudget.toFixed(0)} to reflect this change.
                                       </p>
                                     </div>
                                   </div>
@@ -785,27 +1012,68 @@ const App: React.FC = () => {
                                         You're on pace to save ${monthlyMetrics.savings.toFixed(0)} this month. 
                                         With a savings rate of {monthlyMetrics.savingsPercentage.toFixed(0)}%, 
                                         you're building a solid financial foundation!
+                                        {underBudgetCategories.length > 0 && 
+                                          ` Your spending in ${underBudgetCategories[0].name} is ${
+                                            (100 - underBudgetCategories[0].spentPercentage / underBudgetCategories[0].expectedSpendingPercentage * 100).toFixed(0)
+                                          }% below expected pace, contributing to your savings.`}
                                       </p>
                                     </div>
                                   </div>
                                 )}
                                 
-                                {/* Provide a recommendation */}
+                                {/* Adaptive Budget Recommendation */}
                                 <div className="flex p-3 bg-gradient-to-br from-purple-50 to-blue-50 rounded-lg">
                                   <div className="flex-shrink-0 h-10 w-10 flex items-center justify-center bg-purple-100 text-purple-600 rounded-full mr-3">
                                     <span className="text-lg">💡</span>
                                   </div>
                                   <div>
-                                    <h4 className="font-medium text-purple-700">Recommendation</h4>
+                                    <h4 className="font-medium text-purple-700">Adaptive Budget Insight</h4>
                                     <p className="text-sm text-gray-700 mt-1">
                                       {overBudgetCategories.length > 0 ? 
-                                        `Consider reducing ${overBudgetCategories[0].name.toLowerCase()} spending for the rest of the month to stay within your budget.` :
+                                        `Consider temporarily reducing ${overBudgetCategories[0].name.toLowerCase()} spending for the rest of the month. Your adaptive budget of $${overBudgetCategories[0].adaptiveBudget.toFixed(0)} is based on your typical spending patterns, but you're currently on track to exceed it.` :
+                                        
+                                        changingCategories.length > 0 && changingCategories[0].trendDirection === 'increasing' ?
+                                        `Your spending on ${changingCategories[0].name.toLowerCase()} has recently increased. Your adaptive budget has adjusted to $${changingCategories[0].adaptiveBudget.toFixed(0)}/month to reflect this change. Consider if this increased spending aligns with your financial goals.` :
+                                        
+                                        changingCategories.length > 0 && changingCategories[0].trendDirection === 'decreasing' ?
+                                        `Great job reducing your ${changingCategories[0].name.toLowerCase()} expenses! Your adaptive budget has adjusted down to $${changingCategories[0].adaptiveBudget.toFixed(0)}/month. Consider allocating these savings toward your financial goals.` :
+                                        
                                         monthlyMetrics.savingsPercentage < 15 ?
-                                        `Try to increase your savings rate. Aim for at least 15% of your income to build financial security.` :
+                                        `Your adaptive budgets help you track spending patterns over time. To increase your current ${monthlyMetrics.savingsPercentage.toFixed(0)}% savings rate, look for categories where your spending has gradually increased.` :
+                                        
                                         underBudgetCategories.length > 0 ?
-                                        `Great job keeping ${underBudgetCategories[0].name.toLowerCase()} expenses under control! Consider allocating some of these savings to your emergency fund.` :
-                                        `Your spending is well-balanced across categories. Focus on maintaining this discipline for long-term financial success.`
+                                        `You're ${(100 - underBudgetCategories[0].spentPercentage / underBudgetCategories[0].expectedSpendingPercentage * 100).toFixed(0)}% under your adaptive budget for ${underBudgetCategories[0].name.toLowerCase()}. If this continues, your adaptive budget will gradually adjust downward to reflect your new spending pattern.` :
+                                        
+                                        `Your spending is well-aligned with your adaptive budgets, which adjust over time based on your spending habits. This balance gives you a realistic view of your finances and helps maintain long-term financial health.`
                                       }
+                                    </p>
+                                  </div>
+                                </div>
+                                
+                                {/* Future Projection Insight */}
+                                <div className="flex p-3 bg-gradient-to-br from-indigo-50 to-purple-50 rounded-lg">
+                                  <div className="flex-shrink-0 h-10 w-10 flex items-center justify-center bg-indigo-100 text-indigo-600 rounded-full mr-3">
+                                    <span className="text-lg">🔮</span>
+                                  </div>
+                                  <div>
+                                    <h4 className="font-medium text-indigo-700">Future Projection</h4>
+                                    <p className="text-sm text-gray-700 mt-1">
+                                      {(() => {
+                                        // Calculate total adaptive budget across top categories
+                                        const totalAdaptiveBudget = budgetProgress.reduce((sum, cat) => sum + cat.adaptiveBudget, 0);
+                                        // Projected annual spending based on adaptive budgets
+                                        const projectedAnnualSpend = totalAdaptiveBudget * 12;
+                                        // Monthly income based on current month
+                                        const monthlyIncome = monthlyMetrics.income;
+                                        // Projected annual income
+                                        const projectedAnnualIncome = monthlyIncome * 12;
+                                        // Projected annual savings
+                                        const projectedAnnualSavings = projectedAnnualIncome - projectedAnnualSpend;
+                                        // Savings rate
+                                        const projectedSavingsRate = (projectedAnnualSavings / projectedAnnualIncome) * 100;
+                                        
+                                        return `Based on your adaptive budgets and current income, you're projected to save approximately $${projectedAnnualSavings.toFixed(0)} (${projectedSavingsRate.toFixed(0)}% of income) over the next year if your patterns continue.`;
+                                      })()}
                                     </p>
                                   </div>
                                 </div>
