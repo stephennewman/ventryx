@@ -862,11 +862,35 @@ const App: React.FC = () => {
                                   const projectedTotalSpend = category.spent + projectedAdditionalSpend;
                                   const projectedPercentOfBudget = (projectedTotalSpend / category.adaptiveBudget) * 100;
                                   
+                                  // Calculate the relative budget size for visual representation
+                                  // Get the maximum budget amount to use as a reference
+                                  const maxBudget = Math.max(...budgetProgress.map(item => item.adaptiveBudget));
+                                  // Calculate a relative size factor (from 1 to 5)
+                                  const sizeFactor = Math.max(1, Math.min(5, Math.ceil((category.adaptiveBudget / maxBudget) * 5)));
+                                  
+                                  // Determine the card size class based on the size factor
+                                  const sizeClass = `size-factor-${sizeFactor}`;
+                                  
                                   return (
-                                  <div className="space-y-2" key={category.name}>
+                                  <div 
+                                    className={`space-y-2 rounded-lg border border-purple-50 p-3 mb-${sizeFactor} relative`} 
+                                    key={category.name}
+                                    style={{ 
+                                      marginBottom: `${8 * sizeFactor}px`,
+                                      padding: `${Math.max(12, 8 + (sizeFactor * 2))}px`,
+                                      boxShadow: `0 ${Math.max(1, sizeFactor / 2)}px ${sizeFactor}px rgba(0,0,0,0.05)`
+                                    }}
+                                  >
+                                    {/* Label showing relative budget importance */}
+                                    {sizeFactor >= 4 && (
+                                      <div className="absolute -top-2 -right-2 bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded-full">
+                                        Major Budget Item
+                                      </div>
+                                    )}
+                                    
                                     <div className="flex justify-between items-center">
                                       <div className="flex items-center">
-                                        <span className="font-medium text-sm">{category.name}</span>
+                                        <span className={`font-medium text-${Math.min(sizeFactor + 1, 4)}xl`}>{category.name}</span>
                                         {category.trendDirection !== 'stable' && (
                                           <span className={`ml-2 text-xs px-1.5 py-0.5 rounded-full ${
                                             category.trendDirection === 'increasing' 
@@ -880,13 +904,13 @@ const App: React.FC = () => {
                                         )}
                                       </div>
                                       <div className="text-right">
-                                        <span className="text-sm font-bold">${category.spent.toFixed(0)}</span>
-                                        <span className="text-sm text-gray-500"> / ${category.adaptiveBudget.toFixed(0)}</span>
+                                        <span className={`text-${Math.min(sizeFactor, 3)}xl font-bold`}>${category.spent.toFixed(0)}</span>
+                                        <span className={`text-${Math.min(sizeFactor, 3)}xl text-gray-500`}> / ${category.adaptiveBudget.toFixed(0)}</span>
                                       </div>
                                     </div>
                                     
                                     {/* Main progress bar with dual colors: actual and projected */}
-                                    <div className="relative h-3 bg-gray-100 rounded-full">
+                                    <div className={`relative h-${Math.min(sizeFactor + 1, 5)} bg-gray-100 rounded-full`}>
                                       {/* Actual spend portion - only show if there is spending */}
                                       {category.spent > 0 && (
                                         <div 
@@ -941,11 +965,25 @@ const App: React.FC = () => {
                                     </div>
                                     
                                     {/* Only show rate details if there's actual spending */}
-                                    {category.spent > 0 && (
+                                    {category.spent > 0 && sizeFactor >= 3 && (
                                       <div className="bg-gray-50 p-2 rounded text-xs mt-1">
                                         <div className="flex justify-between">
                                           <span className="text-gray-600">Daily Rate:</span>
                                           <span className="font-medium">${dailySpendRate.toFixed(2)}/day</span>
+                                        </div>
+                                      </div>
+                                    )}
+                                    
+                                    {/* Extra details for major budget items */}
+                                    {sizeFactor >= 4 && (
+                                      <div className="mt-2 grid grid-cols-2 gap-2">
+                                        <div className="bg-purple-50 p-2 rounded text-xs">
+                                          <div className="font-medium text-purple-800 mb-1">Monthly Average</div>
+                                          <div className="text-lg font-bold">${category.historicalAverage.toFixed(0)}</div>
+                                        </div>
+                                        <div className="bg-blue-50 p-2 rounded text-xs">
+                                          <div className="font-medium text-blue-800 mb-1">Budget Impact</div>
+                                          <div className="text-lg font-bold">{(category.adaptiveBudget / maxBudget * 100).toFixed(0)}%</div>
                                         </div>
                                       </div>
                                     )}
