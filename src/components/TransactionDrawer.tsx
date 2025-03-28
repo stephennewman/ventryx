@@ -57,7 +57,8 @@ const TransactionDrawer: React.FC<TransactionDrawerProps> = ({ transaction, isOp
 
 Transaction: $${Math.abs(transaction.amount)} from ${merchantName} (Account ID: ${accountId})
 Pattern: You've received ${similarTransactions.length} payments from this source in this account, averaging $${(similarTransactions.reduce((sum, t) => sum + Math.abs(t.amount), 0) / similarTransactions.length).toFixed(2)}
-Monthly: This source provides about $${stats?.monthlyAverage.toFixed(2)}/month (${stats?.percentOfIncome.toFixed(1)}% of your income)
+Monthly: This source provides about $${stats?.monthlyAverage.toFixed(2)}/month (${stats?.percentOfAccountIncome.toFixed(1)}% of this account's income)
+Overall: This represents ${stats?.percentOfIncome.toFixed(1)}% of your total income across all accounts ($${stats?.annualIncome ? (stats?.annualIncome/12).toFixed(2) : 'N/A'}/month)
 
 Your deep insight should:
 - Start with an emoji that represents the big idea
@@ -80,7 +81,8 @@ Write in a natural, conversational tone that sounds like something a thoughtful 
 
 Transaction: $${Math.abs(transaction.amount)} at ${merchantName} (Account ID: ${accountId})
 Pattern: You've spent here ${similarTransactions.length} times in this account, averaging $${(similarTransactions.reduce((sum, t) => sum + Math.abs(t.amount), 0) / similarTransactions.length).toFixed(2)}
-Monthly: You spend about $${stats?.monthlyAverage.toFixed(2)}/month here (${stats?.percentOfIncome.toFixed(1)}% of your income)
+Monthly: You spend about $${stats?.monthlyAverage.toFixed(2)}/month here (${stats?.percentOfAccountIncome.toFixed(1)}% of this account's income)
+Overall: This represents ${stats?.percentOfIncome.toFixed(1)}% of your total income across all accounts ($${stats?.annualIncome ? (stats?.annualIncome/12).toFixed(2) : 'N/A'}/month)
 Rank: This is your #${stats?.merchantRank || 'N/A'} expense out of ${stats?.totalMerchants || 'N/A'} merchants for this account
 
 Your deep insight should:
@@ -138,12 +140,20 @@ Write in a natural, conversational tone that sounds like something a thoughtful 
       // Different prompts based on transaction type with context but without overanalyzing
       const prompt = isIncoming 
         ? `Write a witty, useful, and emoji-filled one-liner about receiving $${amount} from ${merchant}.
-           Context: This is an INCOME transaction in account ${accountId}.
+           Context: 
+           - This is an INCOME transaction in account ${accountId}
+           - This represents ${stats?.percentOfAccountIncome.toFixed(1)}% of this account's income
+           - Overall impact: ${stats?.percentOfIncome.toFixed(1)}% of total income across all accounts
+           
            Focus on smart money management. Be practical and insightful.
            Max 140 characters. Do not include hashtags.`
         
         : `Write a witty, useful, and emoji-filled one-liner about a $${amount} expense at ${merchant}.
-           Context: This is an EXPENSE transaction in account ${accountId}.
+           Context:
+           - This is an EXPENSE transaction in account ${accountId}
+           - This represents ${stats?.percentOfAccountIncome.toFixed(1)}% of this account's income
+           - Overall impact: ${stats?.percentOfIncome.toFixed(1)}% of total income across all accounts
+           
            Make it clever and practically insightful.
            Max 140 characters. Do not include hashtags.`;
 
@@ -184,6 +194,8 @@ Write in a natural, conversational tone that sounds like something a thoughtful 
            - Source: ${merchantName}
            - Amount: $${Math.abs(transaction.amount)}
            - Monthly income from this source: $${stats?.monthlyAverage.toFixed(2)}
+           - Account Impact: ${stats?.percentOfAccountIncome.toFixed(1)}% of this account's income
+           - Overall Impact: ${stats?.percentOfIncome.toFixed(1)}% of total income across all accounts ($${stats?.annualIncome ? (stats?.annualIncome/12).toFixed(2) : 'N/A'}/month)
            
            Write ONE funny, super-short (20-30 words max) money tip about how to make the most of this income.
            Make it witty and actionable. Use wordplay if possible.`
@@ -193,6 +205,8 @@ Write in a natural, conversational tone that sounds like something a thoughtful 
            - Merchant: ${merchantName}
            - Amount: $${Math.abs(transaction.amount)}
            - Monthly spend: $${stats?.monthlyAverage.toFixed(2)}
+           - Account Impact: ${stats?.percentOfAccountIncome.toFixed(1)}% of this account's income
+           - Overall Impact: ${stats?.percentOfIncome.toFixed(1)}% of total income across all accounts ($${stats?.annualIncome ? (stats?.annualIncome/12).toFixed(2) : 'N/A'}/month)
            
            Write ONE funny, super-short (20-30 words max) money tip about how to save money on this type of expense in the future.
            Make it witty and actionable. Use wordplay if possible.`;
@@ -646,7 +660,7 @@ Write in a natural, conversational tone that sounds like something a thoughtful 
                     <div className="mt-3 text-sm text-blue-700 bg-blue-100 p-3 rounded-lg">
                       This source provides approximately ${(stats.annualPacing / 12).toFixed(2)} per month (${stats.annualPacing.toFixed(2)} annually) to this account, representing {stats.percentOfAccountIncome > 100 ? '100+' : stats.percentOfAccountIncome.toFixed(2)}% of the total income for this account.
                       <br/><br/>
-                      <span className="font-semibold">Overall Impact:</span> This source represents {stats.percentOfIncome > 100 ? '100+' : stats.percentOfIncome.toFixed(2)}% of your total income across all accounts (${(stats.annualIncome / 12).toFixed(2)}/month).
+                      <span className="font-semibold">Overall Impact:</span> This source represents {stats.percentOfIncome > 100 ? '100+' : stats.percentOfIncome.toFixed(2)}% of your total income across all accounts (${stats?.annualIncome ? (stats?.annualIncome/12).toFixed(2) : 'N/A'}/month).
                     </div>
                   </>
                 ) : (
@@ -730,7 +744,7 @@ Write in a natural, conversational tone that sounds like something a thoughtful 
                     <div className="mt-3 text-sm text-blue-700 bg-blue-100 p-3 rounded-lg">
                       If you continue this spending pattern in this account, you'll spend about ${(stats.annualPacing / 12).toFixed(2)} monthly (${stats.annualPacing.toFixed(2)} annually) at {transaction.merchant_name || transaction.name}, which is {stats.percentOfAccountIncome > 100 ? '100+' : stats.percentOfAccountIncome.toFixed(2)}% of this account's total income.
                       <br/><br/>
-                      <span className="font-semibold">Overall Impact:</span> This spending represents {stats.percentOfIncome > 100 ? '100+' : stats.percentOfIncome.toFixed(2)}% of your total income across all accounts (${(stats.annualIncome / 12).toFixed(2)}/month).
+                      <span className="font-semibold">Overall Impact:</span> This spending represents {stats.percentOfIncome > 100 ? '100+' : stats.percentOfIncome.toFixed(2)}% of your total income across all accounts (${stats?.annualIncome ? (stats?.annualIncome/12).toFixed(2) : 'N/A'}/month).
                       {stats.hasCategory && stats.category && 
                         ` This transaction is in the "${stats.category.name}" category, which accounts for ${stats.category.count} transactions in your account history.`
                       }
