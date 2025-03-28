@@ -750,16 +750,6 @@ const App: React.FC = () => {
                                 <span>$0</span>
                                 <span>
                                   {(() => {
-                                    const now = new Date();
-                                    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-                                    const daysPassed = now.getDate();
-                                    const expectedPercentage = (daysPassed / daysInMonth) * 100;
-                                    
-                                    return `Expected: ${expectedPercentage.toFixed(0)}% spent by day ${daysPassed}`;
-                                  })()}
-                                </span>
-                                <span>
-                                  {(() => {
                                     const categories = calculateCategorySpending();
                                     const totalAdaptiveBudget = categories.reduce((sum, cat) => sum + cat.adaptiveBudget, 0);
                                     return `Budget: $${totalAdaptiveBudget.toFixed(2)}`;
@@ -895,21 +885,19 @@ const App: React.FC = () => {
                                     </div>
                                     
                                     <div className="flex justify-between text-xs text-gray-500">
-                                      <span>Expected: {category.expectedSpendingPercentage.toFixed(0)}% by day {daysPassed}</span>
                                       <span className={category.isOverPace ? 'text-red-600 font-medium' : category.isUnderPace ? 'text-green-600 font-medium' : 'text-gray-600'}>
                                         {category.spentPercentage.toFixed(0)}% spent
                                       </span>
+                                      <span>
+                                        Projected: ${(category.adaptiveBudget * (category.spent / category.spentPercentage * 100)).toFixed(0)} by month end
+                                      </span>
                                     </div>
                                     
-                                    {/* Additional historical context */}
+                                    {/* Financial projections instead of historical context */}
                                     <div className="bg-gray-50 p-2 rounded text-xs mt-1">
-                                      <div className="flex justify-between mb-1">
-                                        <span className="text-gray-600">Historical Monthly Average:</span>
-                                        <span className="font-medium">${category.historicalAverage.toFixed(2)}</span>
-                                      </div>
                                       <div className="flex justify-between">
-                                        <span className="text-gray-600">Adaptive Budget (Adjusted):</span>
-                                        <span className="font-medium">${category.adaptiveBudget.toFixed(2)}</span>
+                                        <span className="text-gray-600">Monthly Projection:</span>
+                                        <span className="font-medium">${(category.spent / (category.spentPercentage / 100)).toFixed(2)}</span>
                                       </div>
                                     </div>
                                   </div>
@@ -1020,7 +1008,7 @@ const App: React.FC = () => {
                           
                           return (
                             <div className="bg-white rounded-xl shadow-sm border border-purple-100 p-5">
-                              <h3 className="text-lg font-semibold text-gray-800 mb-4">Smart Financial Insights</h3>
+                              <h3 className="text-lg font-semibold text-gray-800 mb-4">Smart Financial Projections</h3>
                               
                               <div className="space-y-3">
                                 {/* Show warnings for over-budget categories */}
@@ -1117,13 +1105,13 @@ const App: React.FC = () => {
                                   </div>
                                 </div>
                                 
-                                {/* Future Projection Insight */}
+                                {/* Future Projection Insight - Enhanced and moved up in priority */}
                                 <div className="flex p-3 bg-gradient-to-br from-indigo-50 to-purple-50 rounded-lg">
                                   <div className="flex-shrink-0 h-10 w-10 flex items-center justify-center bg-indigo-100 text-indigo-600 rounded-full mr-3">
                                     <span className="text-lg">🔮</span>
                                   </div>
                                   <div>
-                                    <h4 className="font-medium text-indigo-700">Future Projection</h4>
+                                    <h4 className="font-medium text-indigo-700">Financial Projections</h4>
                                     <p className="text-sm text-gray-700 mt-1">
                                       {(() => {
                                         // Calculate total adaptive budget across top categories
@@ -1139,7 +1127,15 @@ const App: React.FC = () => {
                                         // Savings rate
                                         const projectedSavingsRate = (projectedAnnualSavings / projectedAnnualIncome) * 100;
                                         
-                                        return `Based on your adaptive budgets and current income, you're projected to save approximately $${projectedAnnualSavings.toFixed(0)} (${projectedSavingsRate.toFixed(0)}% of income) over the next year if your patterns continue.`;
+                                        // Current month projection
+                                        const daysInMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate();
+                                        const daysPassed = new Date().getDate();
+                                        const monthRemainingPercentage = (daysInMonth - daysPassed) / daysInMonth;
+                                        
+                                        // Project this month's final numbers
+                                        const projectedMonthTotal = monthlyMetrics.expenses / (daysPassed/daysInMonth);
+                                        
+                                        return `Based on your current spending patterns, you're projected to spend approximately $${projectedMonthTotal.toFixed(0)} this month and $${projectedAnnualSpend.toFixed(0)} over the next year. With your current income, this would result in about $${projectedAnnualSavings.toFixed(0)} in annual savings (${projectedSavingsRate.toFixed(0)}% savings rate).`;
                                       })()}
                                     </p>
                                   </div>
