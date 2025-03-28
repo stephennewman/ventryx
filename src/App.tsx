@@ -366,9 +366,244 @@ const App: React.FC = () => {
                 
                 {/* Budget Tab Content */}
                 {activeTab === 'budget' && (
-                  <div className="py-8">
-                    <div className="text-center text-gray-500">
-                      <p className="text-lg">Budget feature coming soon</p>
+                  <div className="py-4">
+                    <div className="grid grid-cols-1 gap-6">
+                      {/* Monthly Overview Card */}
+                      <div className="bg-white rounded-xl shadow-sm border border-purple-100 p-5">
+                        <div className="flex justify-between items-center mb-4">
+                          <h3 className="text-lg font-semibold text-gray-800">Monthly Overview</h3>
+                          <div className="flex space-x-2">
+                            <select className="text-sm border border-gray-200 rounded-md px-2 py-1">
+                              <option>April 2025</option>
+                              <option>March 2025</option>
+                              <option>February 2025</option>
+                            </select>
+                          </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-3 gap-4 mb-6">
+                          <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-lg p-4">
+                            <p className="text-sm text-gray-600 mb-1">Monthly Income</p>
+                            <h4 className="text-2xl font-bold text-green-600">$4,850</h4>
+                            <div className="flex items-center mt-2">
+                              <span className="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded-full">+5.2% from last month</span>
+                            </div>
+                          </div>
+                          
+                          <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-lg p-4">
+                            <p className="text-sm text-gray-600 mb-1">Monthly Expenses</p>
+                            <h4 className="text-2xl font-bold text-purple-600">$3,240</h4>
+                            <div className="flex items-center mt-2">
+                              <span className="text-xs bg-purple-100 text-purple-800 px-2 py-0.5 rounded-full">67% of income</span>
+                            </div>
+                          </div>
+                          
+                          <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-lg p-4">
+                            <p className="text-sm text-gray-600 mb-1">Savings</p>
+                            <h4 className="text-2xl font-bold text-blue-600">$1,610</h4>
+                            <div className="flex items-center mt-2">
+                              <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">33% of income</span>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="relative h-5 bg-gray-100 rounded-full mb-2 overflow-hidden">
+                          <div className="absolute left-0 top-0 h-full bg-gradient-to-r from-purple-500 via-pink-500 to-purple-300" style={{ width: '67%' }}></div>
+                        </div>
+                        <div className="flex justify-between text-xs text-gray-500">
+                          <span>$0</span>
+                          <span>Expenses: $3,240</span>
+                          <span>Income: $4,850</span>
+                        </div>
+                      </div>
+                      
+                      {/* Spending by Category Card */}
+                      <div className="bg-white rounded-xl shadow-sm border border-purple-100 p-5">
+                        <h3 className="text-lg font-semibold text-gray-800 mb-4">Spending by Category</h3>
+                        
+                        <div className="grid grid-cols-2 gap-6">
+                          <div className="flex flex-col justify-center">
+                            <div className="w-full h-48 rounded-lg bg-gradient-to-br from-purple-50 to-blue-50 p-4 flex justify-center items-center">
+                              {/* This would be a pie chart in a real implementation */}
+                              <div className="relative w-36 h-36 rounded-full" style={{ background: 'conic-gradient(#8b5cf6 0% 25%, #ec4899 25% 45%, #06b6d4 45% 60%, #8b5cf6 60% 75%, #0ea5e9 75% 100%)' }}>
+                                <div className="absolute inset-[15%] bg-white rounded-full flex items-center justify-center">
+                                  <span className="text-sm font-medium">12 Categories</span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div className="space-y-3">
+                            <div className="flex items-center">
+                              <div className="w-3 h-3 rounded-full bg-purple-500 mr-2"></div>
+                              <div className="flex-1">
+                                <div className="flex justify-between">
+                                  <span className="text-sm font-medium">Housing</span>
+                                  <span className="text-sm font-medium">$1,200</span>
+                                </div>
+                                <div className="w-full bg-gray-100 rounded-full h-1.5 mt-1">
+                                  <div className="bg-purple-500 h-1.5 rounded-full" style={{ width: '37%' }}></div>
+                                </div>
+                              </div>
+                            </div>
+                            
+                            <div className="flex items-center">
+                              <div className="w-3 h-3 rounded-full bg-pink-500 mr-2"></div>
+                              <div className="flex-1">
+                                <div className="flex justify-between">
+                                  <span className="text-sm font-medium">Food & Dining</span>
+                                  <span className="text-sm font-medium">$650</span>
+                                </div>
+                                <div className="w-full bg-gray-100 rounded-full h-1.5 mt-1">
+                                  <div className="bg-pink-500 h-1.5 rounded-full" style={{ width: '20%' }}></div>
+                                </div>
+                              </div>
+                            </div>
+                            
+                            <div className="flex items-center">
+                              <div className="w-3 h-3 rounded-full bg-cyan-500 mr-2"></div>
+                              <div className="flex-1">
+                                <div className="flex justify-between">
+                                  <span className="text-sm font-medium">Transportation</span>
+                                  <span className="text-sm font-medium">$490</span>
+                                </div>
+                                <div className="w-full bg-gray-100 rounded-full h-1.5 mt-1">
+                                  <div className="bg-cyan-500 h-1.5 rounded-full" style={{ width: '15%' }}></div>
+                                </div>
+                              </div>
+                            </div>
+                            
+                            <div className="flex items-center">
+                              <div className="w-3 h-3 rounded-full bg-purple-400 mr-2"></div>
+                              <div className="flex-1">
+                                <div className="flex justify-between">
+                                  <span className="text-sm font-medium">Entertainment</span>
+                                  <span className="text-sm font-medium">$380</span>
+                                </div>
+                                <div className="w-full bg-gray-100 rounded-full h-1.5 mt-1">
+                                  <div className="bg-purple-400 h-1.5 rounded-full" style={{ width: '12%' }}></div>
+                                </div>
+                              </div>
+                            </div>
+                            
+                            <div className="flex items-center">
+                              <div className="w-3 h-3 rounded-full bg-blue-500 mr-2"></div>
+                              <div className="flex-1">
+                                <div className="flex justify-between">
+                                  <span className="text-sm font-medium">Other</span>
+                                  <span className="text-sm font-medium">$520</span>
+                                </div>
+                                <div className="w-full bg-gray-100 rounded-full h-1.5 mt-1">
+                                  <div className="bg-blue-500 h-1.5 rounded-full" style={{ width: '16%' }}></div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Budget Progress Card */}
+                      <div className="bg-white rounded-xl shadow-sm border border-purple-100 p-5">
+                        <div className="flex justify-between items-center mb-4">
+                          <h3 className="text-lg font-semibold text-gray-800">Budget Progress</h3>
+                          <div className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                            Day 18 of 30
+                          </div>
+                        </div>
+                        
+                        <div className="space-y-5">
+                          <div className="space-y-2">
+                            <div className="flex justify-between items-center">
+                              <span className="font-medium text-sm">Food & Dining</span>
+                              <div className="text-right">
+                                <span className="text-sm font-bold">$650</span>
+                                <span className="text-sm text-gray-500"> / $800</span>
+                              </div>
+                            </div>
+                            <div className="relative h-3 bg-gray-100 rounded-full">
+                              <div className="absolute top-0 left-0 h-full bg-pink-500 rounded-full" style={{ width: '81%' }}></div>
+                              <div className="absolute top-0 h-full border-r-2 border-gray-600" style={{ left: '60%' }}></div>
+                            </div>
+                            <div className="flex justify-between text-xs text-gray-500">
+                              <span>On pace: 60% should be spent by day 18</span>
+                              <span className="text-red-600 font-medium">81% spent</span>
+                            </div>
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <div className="flex justify-between items-center">
+                              <span className="font-medium text-sm">Entertainment</span>
+                              <div className="text-right">
+                                <span className="text-sm font-bold">$380</span>
+                                <span className="text-sm text-gray-500"> / $500</span>
+                              </div>
+                            </div>
+                            <div className="relative h-3 bg-gray-100 rounded-full">
+                              <div className="absolute top-0 left-0 h-full bg-purple-400 rounded-full" style={{ width: '76%' }}></div>
+                              <div className="absolute top-0 h-full border-r-2 border-gray-600" style={{ left: '60%' }}></div>
+                            </div>
+                            <div className="flex justify-between text-xs text-gray-500">
+                              <span>On pace: 60% should be spent by day 18</span>
+                              <span className="text-red-600 font-medium">76% spent</span>
+                            </div>
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <div className="flex justify-between items-center">
+                              <span className="font-medium text-sm">Transportation</span>
+                              <div className="text-right">
+                                <span className="text-sm font-bold">$490</span>
+                                <span className="text-sm text-gray-500"> / $900</span>
+                              </div>
+                            </div>
+                            <div className="relative h-3 bg-gray-100 rounded-full">
+                              <div className="absolute top-0 left-0 h-full bg-cyan-500 rounded-full" style={{ width: '54%' }}></div>
+                              <div className="absolute top-0 h-full border-r-2 border-gray-600" style={{ left: '60%' }}></div>
+                            </div>
+                            <div className="flex justify-between text-xs text-gray-500">
+                              <span>On pace: 60% should be spent by day 18</span>
+                              <span className="text-green-600 font-medium">54% spent</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Insights and Recommendations Card */}
+                      <div className="bg-white rounded-xl shadow-sm border border-purple-100 p-5">
+                        <h3 className="text-lg font-semibold text-gray-800 mb-4">Insights & Recommendations</h3>
+                        
+                        <div className="space-y-3">
+                          <div className="flex p-3 bg-gradient-to-br from-pink-50 to-red-50 rounded-lg">
+                            <div className="flex-shrink-0 h-10 w-10 flex items-center justify-center bg-red-100 text-red-600 rounded-full mr-3">
+                              <span className="text-lg">⚠️</span>
+                            </div>
+                            <div>
+                              <h4 className="font-medium text-red-700">Food & Dining over budget</h4>
+                              <p className="text-sm text-gray-700 mt-1">You're spending too quickly on Food & Dining this month. At your current pace, you'll exceed your budget by $183 by month end.</p>
+                            </div>
+                          </div>
+                          
+                          <div className="flex p-3 bg-gradient-to-br from-green-50 to-blue-50 rounded-lg">
+                            <div className="flex-shrink-0 h-10 w-10 flex items-center justify-center bg-green-100 text-green-600 rounded-full mr-3">
+                              <span className="text-lg">💰</span>
+                            </div>
+                            <div>
+                              <h4 className="font-medium text-green-700">Savings on track</h4>
+                              <p className="text-sm text-gray-700 mt-1">You're on pace to save $1,610 this month. This puts you $120 ahead of your monthly savings goal!</p>
+                            </div>
+                          </div>
+                          
+                          <div className="flex p-3 bg-gradient-to-br from-purple-50 to-blue-50 rounded-lg">
+                            <div className="flex-shrink-0 h-10 w-10 flex items-center justify-center bg-purple-100 text-purple-600 rounded-full mr-3">
+                              <span className="text-lg">💡</span>
+                            </div>
+                            <div>
+                              <h4 className="font-medium text-purple-700">Recommendation</h4>
+                              <p className="text-sm text-gray-700 mt-1">Consider reducing restaurant spending for the rest of the month. Home-cooked meals could help you stay under your Food & Dining budget.</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 )}
