@@ -35,10 +35,12 @@ const TransactionDrawer: React.FC<TransactionDrawerProps> = ({ transaction, isOp
     
     setIsLoadingInsight(true);
     try {
-      // Get similar transactions (same merchant)
+      // Get similar transactions (same merchant and account)
       const merchantName = transaction.merchant_name || transaction.name;
+      const accountId = transaction.account_id;
       const similarTransactions = transactions.filter(t => 
-        (t.merchant_name || t.name) === merchantName
+        (t.merchant_name || t.name) === merchantName &&
+        t.account_id === accountId
       );
 
       const stats = calculateMerchantStats();
@@ -53,8 +55,8 @@ const TransactionDrawer: React.FC<TransactionDrawerProps> = ({ transaction, isOp
         // Updated prompt for incoming transactions - naturally shareable
         prompt = `Create a single thought-provoking "big picture" financial insight about this income transaction that would be genuinely interesting to share in conversation:
 
-Transaction: $${Math.abs(transaction.amount)} from ${merchantName}
-Pattern: You've received ${similarTransactions.length} payments from this source, averaging $${(similarTransactions.reduce((sum, t) => sum + Math.abs(t.amount), 0) / similarTransactions.length).toFixed(2)}
+Transaction: $${Math.abs(transaction.amount)} from ${merchantName} (Account ID: ${accountId})
+Pattern: You've received ${similarTransactions.length} payments from this source in this account, averaging $${(similarTransactions.reduce((sum, t) => sum + Math.abs(t.amount), 0) / similarTransactions.length).toFixed(2)}
 Monthly: This source provides about $${stats?.monthlyAverage.toFixed(2)}/month (${stats?.percentOfIncome.toFixed(1)}% of your income)
 
 Your deep insight should:
@@ -76,10 +78,10 @@ Write in a natural, conversational tone that sounds like something a thoughtful 
         // Updated prompt for outgoing transactions - naturally shareable
         prompt = `Create a single thought-provoking "big picture" financial insight about this purchase that would be genuinely interesting to share in conversation:
 
-Transaction: $${Math.abs(transaction.amount)} at ${merchantName}
-Pattern: You've spent here ${similarTransactions.length} times, averaging $${(similarTransactions.reduce((sum, t) => sum + Math.abs(t.amount), 0) / similarTransactions.length).toFixed(2)}
+Transaction: $${Math.abs(transaction.amount)} at ${merchantName} (Account ID: ${accountId})
+Pattern: You've spent here ${similarTransactions.length} times in this account, averaging $${(similarTransactions.reduce((sum, t) => sum + Math.abs(t.amount), 0) / similarTransactions.length).toFixed(2)}
 Monthly: You spend about $${stats?.monthlyAverage.toFixed(2)}/month here (${stats?.percentOfIncome.toFixed(1)}% of your income)
-Rank: This is your #${stats?.merchantRank || 'N/A'} expense out of ${stats?.totalMerchants || 'N/A'} merchants
+Rank: This is your #${stats?.merchantRank || 'N/A'} expense out of ${stats?.totalMerchants || 'N/A'} merchants for this account
 
 Your deep insight should:
 - Start with an emoji that represents the big idea
@@ -129,9 +131,21 @@ Write in a natural, conversational tone that sounds like something a thoughtful 
     try {
       const merchant = transaction.merchant_name || transaction.name;
       const isIncoming = transaction.amount < 0;
+      const amount = Math.abs(transaction.amount);
+      const accountId = transaction.account_id;
+      const stats = calculateMerchantStats();
+      
+      // Different prompts based on transaction type with context but without overanalyzing
       const prompt = isIncoming 
-        ? `Write a witty, useful, and emoji-filled one-liner about receiving $${Math.abs(transaction.amount)} from ${merchant}. Focus on smart money management. Max 140 characters. Do not include hashtags.`
-        : `Write a witty, useful, and emoji-filled one-liner about a $${Math.abs(transaction.amount)} transaction at ${merchant}. Make it clever and practically insightful. Max 140 characters. Do not include hashtags.`;
+        ? `Write a witty, useful, and emoji-filled one-liner about receiving $${amount} from ${merchant}.
+           Context: This is an INCOME transaction in account ${accountId}.
+           Focus on smart money management. Be practical and insightful.
+           Max 140 characters. Do not include hashtags.`
+        
+        : `Write a witty, useful, and emoji-filled one-liner about a $${amount} expense at ${merchant}.
+           Context: This is an EXPENSE transaction in account ${accountId}.
+           Make it clever and practically insightful.
+           Max 140 characters. Do not include hashtags.`;
 
       const messages = [{
         role: 'user',
@@ -161,11 +175,12 @@ Write in a natural, conversational tone that sounds like something a thoughtful 
       const stats = calculateMerchantStats();
       const merchantName = transaction.merchant_name || transaction.name;
       const isIncoming = transaction.amount < 0;
+      const accountId = transaction.account_id;
       
       // Create a prompt based on transaction type and pacing data
       const prompt = isIncoming 
         ? `You're a financial comedian with practical money advice.
-           Based on this income:
+           Based on this income in account ${accountId}:
            - Source: ${merchantName}
            - Amount: $${Math.abs(transaction.amount)}
            - Monthly income from this source: $${stats?.monthlyAverage.toFixed(2)}
@@ -174,7 +189,7 @@ Write in a natural, conversational tone that sounds like something a thoughtful 
            Make it witty and actionable. Use wordplay if possible.`
            
         : `You're a financial comedian with practical money advice.
-           Based on this expense:
+           Based on this expense in account ${accountId}:
            - Merchant: ${merchantName}
            - Amount: $${Math.abs(transaction.amount)}
            - Monthly spend: $${stats?.monthlyAverage.toFixed(2)}
@@ -210,9 +225,13 @@ Write in a natural, conversational tone that sounds like something a thoughtful 
     const merchantName = transaction.merchant_name || transaction.name;
     const isIncoming = transaction.amount < 0;
     
-    // Filter transactions by this merchant name
+    // Get the account_id of the current transaction for proper filtering
+    const accountId = transaction.account_id;
+    
+    // Filter transactions by this merchant name AND same account
     const merchantTransactions = transactions.filter(t => 
-      (t.merchant_name || t.name) === merchantName
+      (t.merchant_name || t.name) === merchantName && 
+      t.account_id === accountId
     );
 
     // Get category of the current transaction
@@ -226,7 +245,8 @@ Write in a natural, conversational tone that sounds like something a thoughtful 
           t.category && 
           t.category.length > 0 && 
           t.category[0] === transactionCategory &&
-          (isIncoming ? t.amount < 0 : t.amount > 0) // Match income vs expense
+          (isIncoming ? t.amount < 0 : t.amount > 0) && // Match income vs expense
+          t.account_id === accountId // Same account
         )
       : [];
 
@@ -243,8 +263,8 @@ Write in a natural, conversational tone that sounds like something a thoughtful 
       ? monthlyAverage * 12  // Income: Monthly income * 12
       : (totalSpent / daysSinceFirst) * 365; // Expenses: Daily spend * 365
     
-    // Identify all income transactions for income analysis
-    const allIncomeTransactions = transactions.filter(t => t.amount < 0);
+    // Identify all income transactions for income analysis - filtered by account
+    const allIncomeTransactions = transactions.filter(t => t.amount < 0 && t.account_id === accountId);
 
     // Category spending analysis
     const categorySummary = transactionCategory ? {
@@ -266,8 +286,8 @@ Write in a natural, conversational tone that sounds like something a thoughtful 
     let totalMerchants = 0;
     
     if (!isIncoming) {
-      // Get all outgoing/expense transactions
-      const expenseTransactions = transactions.filter(t => t.amount > 0);
+      // Get all outgoing/expense transactions for this account
+      const expenseTransactions = transactions.filter(t => t.amount > 0 && t.account_id === accountId);
       
       // Group by merchant and calculate total spent
       interface MerchantSpending {
@@ -422,10 +442,18 @@ Write in a natural, conversational tone that sounds like something a thoughtful 
       incomeDetail.incomeBySource = incomeBySource;
     }
     
-    // For expense transactions, calculate percentage of annual income
-    const percentOfIncome = isIncoming 
-      ? (annualPacing / annualIncome) * 100  // For income: what percent of total income is this source
-      : (annualPacing / annualIncome) * 100; // For expense: what percent of income is spent here
+    // For income transactions, calculate percentage as source income relative to total account income
+    // For expense transactions, calculate what percent of annual income is spent on this merchant
+    let percentOfIncome = 0;
+    
+    if (isIncoming) {
+      // For income: Calculate what percent of total income comes from this source
+      const thisSourceAnnualIncome = annualPacing; // Annual pace of income from this source
+      percentOfIncome = (thisSourceAnnualIncome / annualIncome) * 100;
+    } else {
+      // For expenses: Calculate what percent of annual income is spent here
+      percentOfIncome = (annualPacing / annualIncome) * 100;
+    }
 
     return {
       totalSpent,
@@ -442,7 +470,8 @@ Write in a natural, conversational tone that sounds like something a thoughtful 
       merchantRank,
       totalMerchants,
       category: categorySummary,
-      hasCategory: !!transactionCategory
+      hasCategory: !!transactionCategory,
+      accountId
     };
   };
 
@@ -544,18 +573,22 @@ Write in a natural, conversational tone that sounds like something a thoughtful 
                       <div className="p-3 bg-blue-50 rounded-lg">
                         <p className="text-sm text-blue-700">Monthly Income</p>
                         <p className="text-lg font-semibold text-blue-900">${(stats.annualIncome / 12).toFixed(2)}</p>
+                        <p className="text-xs text-gray-500">In this account</p>
                       </div>
                       <div className="p-3 bg-blue-50 rounded-lg">
                         <p className="text-sm text-blue-700">Annual Income</p>
                         <p className="text-lg font-semibold text-blue-900">${stats.annualIncome.toFixed(2)}</p>
+                        <p className="text-xs text-gray-500">In this account</p>
                       </div>
                       <div className="p-3 bg-blue-50 rounded-lg">
                         <p className="text-sm text-blue-700">This Source Monthly</p>
                         <p className="text-lg font-semibold text-blue-900">${(stats.annualPacing / 12).toFixed(2)}</p>
+                        <p className="text-xs text-gray-500">For this account</p>
                       </div>
                       <div className="p-3 bg-blue-50 rounded-lg">
                         <p className="text-sm text-blue-700">This Source Annually</p>
                         <p className="text-lg font-semibold text-blue-900">${stats.annualPacing.toFixed(2)}</p>
+                        <p className="text-xs text-gray-500">For this account</p>
                       </div>
                     </div>
                     
@@ -575,7 +608,7 @@ Write in a natural, conversational tone that sounds like something a thoughtful 
                           <div className="absolute inset-0 m-3 rounded-full bg-white flex items-center justify-center">
                             <div className="text-center">
                               <span className="text-lg font-bold text-blue-900">{Math.min(stats.percentOfIncome, 100).toFixed(1)}%</span>
-                              <p className="text-xs text-blue-700">of total income</p>
+                              <p className="text-xs text-blue-700">of account's total income</p>
                             </div>
                           </div>
                         </div>
@@ -583,7 +616,7 @@ Write in a natural, conversational tone that sounds like something a thoughtful 
                     </div>
                     
                     <div className="mt-3 text-sm text-blue-700 bg-blue-100 p-3 rounded-lg">
-                      This source provides approximately ${(stats.annualPacing / 12).toFixed(2)} per month (${stats.annualPacing.toFixed(2)} annually), representing {stats.percentOfIncome > 100 ? '100+' : stats.percentOfIncome.toFixed(2)}% of your total income.
+                      This source provides approximately ${(stats.annualPacing / 12).toFixed(2)} per month (${stats.annualPacing.toFixed(2)} annually) to this account, representing {stats.percentOfIncome > 100 ? '100+' : stats.percentOfIncome.toFixed(2)}% of the total income for this account.
                     </div>
                   </>
                 ) : (
@@ -593,10 +626,12 @@ Write in a natural, conversational tone that sounds like something a thoughtful 
                       <div className="p-3 bg-blue-50 rounded-lg">
                         <p className="text-sm text-blue-700">Monthly Spend Pace</p>
                         <p className="text-lg font-semibold text-blue-900">${(stats.annualPacing / 12).toFixed(2)}</p>
+                        <p className="text-xs text-gray-500">In this account</p>
                       </div>
                       <div className="p-3 bg-blue-50 rounded-lg">
                         <p className="text-sm text-blue-700">Annual Spend Pace</p>
                         <p className="text-lg font-semibold text-blue-900">${stats.annualPacing.toFixed(2)}</p>
+                        <p className="text-xs text-gray-500">In this account</p>
                       </div>
                     </div>
                     
@@ -616,7 +651,7 @@ Write in a natural, conversational tone that sounds like something a thoughtful 
                           <div className="absolute inset-0 m-3 rounded-full bg-white flex items-center justify-center">
                             <div className="text-center">
                               <span className="text-lg font-bold text-blue-900">{Math.min(stats.percentOfIncome, 100).toFixed(1)}%</span>
-                              <p className="text-xs text-blue-700">of monthly income</p>
+                              <p className="text-xs text-blue-700">of account's total income</p>
                             </div>
                           </div>
                         </div>
@@ -626,7 +661,7 @@ Write in a natural, conversational tone that sounds like something a thoughtful 
                         <div className="bg-white rounded-lg p-4 flex flex-col items-center justify-center border-2 border-red-200 shadow-sm">
                           <span className="text-2xl font-bold text-red-600">#{stats.merchantRank}</span>
                           <span className="text-sm text-gray-700">of {stats.totalMerchants}</span>
-                          <span className="text-xs text-gray-500 mt-1">expense{stats.totalMerchants !== 1 ? 's' : ''}</span>
+                          <span className="text-xs text-gray-500 mt-1">expense{stats.totalMerchants !== 1 ? 's' : ''} in account</span>
                         </div>
                       )}
                     </div>
@@ -640,6 +675,7 @@ Write in a natural, conversational tone that sounds like something a thoughtful 
                             <div>
                               <p className="text-green-700">Category Total</p>
                               <p className="font-semibold">${stats.category.totalSpent.toFixed(2)}</p>
+                              <p className="text-xs text-green-700">In this account</p>
                             </div>
                             <div>
                               <p className="text-green-700">Category Avg</p>
@@ -649,6 +685,7 @@ Write in a natural, conversational tone that sounds like something a thoughtful 
                               <div>
                                 <p className="text-green-700">Category Rank</p>
                                 <p className="font-semibold">#{stats.category.categoryRank} of {stats.category.totalCategories}</p>
+                                <p className="text-xs text-green-700">In this account</p>
                               </div>
                             )}
                             <div>
@@ -661,9 +698,9 @@ Write in a natural, conversational tone that sounds like something a thoughtful 
                     )}
                     
                     <div className="mt-3 text-sm text-blue-700 bg-blue-100 p-3 rounded-lg">
-                      If you continue this spending pattern, you'll spend about ${(stats.annualPacing / 12).toFixed(2)} monthly (${stats.annualPacing.toFixed(2)} annually) at {transaction.merchant_name || transaction.name}, which is {stats.percentOfIncome > 100 ? '100+' : stats.percentOfIncome.toFixed(2)}% of your income.
+                      If you continue this spending pattern in this account, you'll spend about ${(stats.annualPacing / 12).toFixed(2)} monthly (${stats.annualPacing.toFixed(2)} annually) at {transaction.merchant_name || transaction.name}, which is {stats.percentOfIncome > 100 ? '100+' : stats.percentOfIncome.toFixed(2)}% of this account's total income.
                       {stats.hasCategory && stats.category && 
-                        ` This transaction is in the "${stats.category.name}" category, which accounts for ${stats.category.count} transactions in your history.`
+                        ` This transaction is in the "${stats.category.name}" category, which accounts for ${stats.category.count} transactions in your account history.`
                       }
                     </div>
                   </>
