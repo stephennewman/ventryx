@@ -855,7 +855,15 @@ const App: React.FC = () => {
                               </div>
                               
                               <div className="space-y-5">
-                                {budgetProgress.map(category => (
+                                {budgetProgress.map(category => {
+                                  // Calculate more accurate projections
+                                  const daysRemaining = daysInMonth - daysPassed;
+                                  const dailySpendRate = category.spent / daysPassed;
+                                  const projectedAdditionalSpend = dailySpendRate * daysRemaining;
+                                  const projectedTotalSpend = category.spent + projectedAdditionalSpend;
+                                  const projectedPercentOfBudget = (projectedTotalSpend / category.adaptiveBudget) * 100;
+                                  
+                                  return (
                                   <div className="space-y-2" key={category.name}>
                                     <div className="flex justify-between items-center">
                                       <div className="flex items-center">
@@ -878,14 +886,29 @@ const App: React.FC = () => {
                                       </div>
                                     </div>
                                     
-                                    {/* Main progress bar */}
+                                    {/* Main progress bar with dual colors: actual and projected */}
                                     <div className="relative h-3 bg-gray-100 rounded-full">
+                                      {/* Actual spend portion */}
                                       <div 
                                         className={`absolute top-0 left-0 h-full rounded-l-full ${
                                           category.isOverPace ? 'bg-red-500' : category.isUnderPace ? 'bg-green-500' : 'bg-blue-500'
                                         }`}
                                         style={{ width: `${Math.min(100, category.spentPercentage)}%` }}
                                       ></div>
+                                      
+                                      {/* Projected additional spend portion */}
+                                      <div 
+                                        className={`absolute top-0 h-full ${
+                                          category.isOverPace ? 'bg-red-300' : category.isUnderPace ? 'bg-green-300' : 'bg-blue-300'
+                                        }`}
+                                        style={{ 
+                                          left: `${Math.min(100, category.spentPercentage)}%`, 
+                                          width: `${Math.min(100 - Math.min(100, category.spentPercentage), Math.min(100, projectedPercentOfBudget) - Math.min(100, category.spentPercentage))}%`,
+                                          borderTopRightRadius: projectedPercentOfBudget >= 100 ? '0.375rem' : '0',
+                                          borderBottomRightRadius: projectedPercentOfBudget >= 100 ? '0.375rem' : '0'
+                                        }}
+                                      ></div>
+                                      
                                       <div 
                                         className="absolute top-0 h-full border-r-2 border-gray-600"
                                         style={{ left: `${category.expectedSpendingPercentage}%` }}
@@ -897,19 +920,19 @@ const App: React.FC = () => {
                                         {category.spentPercentage.toFixed(0)}% spent
                                       </span>
                                       <span>
-                                        Projected: ${(category.adaptiveBudget * (category.spent / category.spentPercentage * 100)).toFixed(0)} by month end
+                                        Projected: ${projectedTotalSpend.toFixed(0)} by month end
                                       </span>
                                     </div>
                                     
                                     {/* Financial projections instead of historical context */}
                                     <div className="bg-gray-50 p-2 rounded text-xs mt-1">
                                       <div className="flex justify-between">
-                                        <span className="text-gray-600">Monthly Projection:</span>
-                                        <span className="font-medium">${(category.spent / (category.spentPercentage / 100)).toFixed(2)}</span>
+                                        <span className="text-gray-600">Daily Rate:</span>
+                                        <span className="font-medium">${dailySpendRate.toFixed(2)}/day</span>
                                       </div>
                                     </div>
                                   </div>
-                                ))}
+                                )})}
                               </div>
                             </div>
                           );
