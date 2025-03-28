@@ -13,8 +13,8 @@ interface TransactionFeedProps {
 
 // Custom input component for the date picker
 const CustomDateInput = React.forwardRef<HTMLButtonElement, React.ComponentProps<'button'>>(({ onClick }, ref) => (
-  <button className="p-2 border rounded flex items-center" onClick={onClick} ref={ref}>
-    <FaCalendarAlt className="mr-2 text-purple-600" />
+  <button className="p-2 border rounded flex items-center justify-center h-10 border-purple-300 bg-purple-50 text-purple-800" onClick={onClick} ref={ref}>
+    <FaCalendarAlt className="text-purple-600" />
   </button>
 ));
 
@@ -127,57 +127,41 @@ const TransactionFeed: React.FC<TransactionFeedProps> = ({ transactions, selecte
 
   return (
     <div className="space-y-4">
-      {withdrawalCount > 0 && (
-        <div className="p-4 rounded-lg shadow-md flex justify-between items-start bg-gradient-to-r from-purple-50 via-pink-50 to-blue-50">
-          <div className="text-left">
-            {lastXDays > 0 && (
-              <p className="text-sm text-gray-700">Days Analyzed: {lastXDays}</p>
-            )}
-            <p className="text-sm text-gray-700"># of Transactions: {withdrawalCount}</p>
-            <p className="text-sm text-gray-700"># of Unique Vendors: {uniqueVendors}</p>
-            <p className="text-sm text-gray-700">Average Transaction: ${withdrawalCount > 0 ? (totalWithdrawalAmount / withdrawalCount).toFixed(2) : '0.00'}</p>
-            <p className="text-sm text-gray-700">Average Weekly Spend: ${averageWeeklyExpense.toFixed(2)}</p>
-            <p className="text-sm text-gray-700">Average Monthly Spend: ${averageMonthlyExpense.toFixed(2)}</p>
-          </div>
-          <div className="text-right">
-            <h4 className="text-lg font-semibold text-red-800">Total Spend: ${totalWithdrawalAmount.toFixed(2)}</h4>
-          </div>
-        </div>
-      )}
-      <div className="flex flex-wrap items-center gap-4 mb-4">
+      <div className="flex flex-wrap items-center justify-between gap-6 mb-4">
         <input
           type="text"
           placeholder="Search transactions..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-        className="p-2 border border-purple-300 rounded bg-purple-50 text-purple-800 w-64"
+          className="p-2 border border-purple-300 rounded bg-purple-50 text-purple-800 flex-grow max-w-md"
         />
-        <label htmlFor="sort" className="mr-2">Sort by:</label>
-        <div className="relative">
-          <select
-            id="sort"
-            value={sortOption}
-            onChange={handleSortChange}
-            className="appearance-none bg-purple-50 border border-purple-300 text-purple-800 rounded p-2 pr-8"
-          >
-            <option value="date-desc">Date (Newest to Oldest)</option>
-            <option value="date-asc">Date (Oldest to Newest)</option>
-            <option value="amount-desc">Amount (Highest to Lowest)</option>
-            <option value="amount-asc">Amount (Lowest to Highest)</option>
-          </select>
-          <div className="absolute right-2 top-1/2 transform -translate-y-1/2 text-purple-600 pointer-events-none">
-            <FaChevronDown />
+        <div className="flex items-center gap-4">
+          <div className="relative">
+            <select
+              id="sort"
+              value={sortOption}
+              onChange={handleSortChange}
+              className="appearance-none bg-purple-50 border border-purple-300 text-purple-800 rounded p-2 pr-8"
+            >
+              <option value="date-desc">Date (Newest to Oldest)</option>
+              <option value="date-asc">Date (Oldest to Newest)</option>
+              <option value="amount-desc">Amount (Highest to Lowest)</option>
+              <option value="amount-asc">Amount (Lowest to Highest)</option>
+            </select>
+            <div className="absolute right-2 top-1/2 transform -translate-y-1/2 text-purple-600 pointer-events-none">
+              <FaChevronDown />
+            </div>
           </div>
+          <DatePicker
+            selectsRange={true}
+            startDate={startDate}
+            endDate={endDate}
+            onChange={(update) => setDateRange(update)}
+            isClearable={true}
+            customInput={<CustomDateInput />}
+            popperClassName="z-50"
+          />
         </div>
-        <DatePicker
-          selectsRange={true}
-          startDate={startDate}
-          endDate={endDate}
-          onChange={(update) => setDateRange(update)}
-          isClearable={true}
-          customInput={<CustomDateInput />}
-          popperClassName="z-50"
-        />
       </div>
       {selectedCategory || selectedVendor || selectedAccountId ? (
         <div className="p-2 border rounded mb-4">
