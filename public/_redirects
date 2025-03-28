@@ -1,1 +1,2 @@
+/api/*  https://us-central1-ventryx-71b2a.cloudfunctions.net/api/:splat  200
 /* /index.html 200 
