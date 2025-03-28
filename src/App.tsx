@@ -678,26 +678,93 @@ const App: React.FC = () => {
                                 </div>
                                 
                                 <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-lg p-4">
-                                  <p className="text-sm text-gray-600 mb-1">Savings</p>
-                                  <h4 className="text-2xl font-bold text-blue-600">${monthlyMetrics.savings.toFixed(2)}</h4>
+                                  <p className="text-sm text-gray-600 mb-1">Adaptive Budget</p>
+                                  <h4 className="text-2xl font-bold text-blue-600">
+                                    ${(() => {
+                                      // Calculate total adaptive budget for the month
+                                      const categories = calculateCategorySpending();
+                                      const totalAdaptiveBudget = categories.reduce((sum, cat) => sum + cat.adaptiveBudget, 0);
+                                      return totalAdaptiveBudget.toFixed(2);
+                                    })()}
+                                  </h4>
                                   <div className="flex items-center mt-2">
-                                    <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">
-                                      {monthlyMetrics.savingsPercentage.toFixed(0)}% of income
-                                    </span>
+                                    {(() => {
+                                      const categories = calculateCategorySpending();
+                                      const totalAdaptiveBudget = categories.reduce((sum, cat) => sum + cat.adaptiveBudget, 0);
+                                      const budgetPercentage = totalAdaptiveBudget > 0 
+                                        ? (monthlyMetrics.expenses / totalAdaptiveBudget) * 100
+                                        : 0;
+                                      const isOverBudget = budgetPercentage > 100;
+                                      const isUnderBudget = budgetPercentage < 85;
+                                      
+                                      return (
+                                        <span className={`text-xs ${
+                                          isOverBudget ? 'bg-red-100 text-red-800' : 
+                                          isUnderBudget ? 'bg-green-100 text-green-800' : 
+                                          'bg-blue-100 text-blue-800'
+                                        } px-2 py-0.5 rounded-full`}>
+                                          {budgetPercentage.toFixed(0)}% used
+                                        </span>
+                                      );
+                                    })()}
                                   </div>
                                 </div>
                               </div>
                               
                               <div className="relative h-5 bg-gray-100 rounded-full mb-2 overflow-hidden">
+                                {(() => {
+                                  const categories = calculateCategorySpending();
+                                  const totalAdaptiveBudget = categories.reduce((sum, cat) => sum + cat.adaptiveBudget, 0);
+                                  const budgetPercentage = totalAdaptiveBudget > 0 
+                                    ? (monthlyMetrics.expenses / totalAdaptiveBudget) * 100
+                                    : 0;
+                                  const isOverBudget = budgetPercentage > 100;
+                                  
+                                  return (
+                                    <div 
+                                      className={`absolute left-0 top-0 h-full ${
+                                        isOverBudget 
+                                          ? 'bg-gradient-to-r from-red-500 via-red-400 to-red-300' 
+                                          : 'bg-gradient-to-r from-purple-500 via-pink-500 to-purple-300'
+                                      }`} 
+                                      style={{ width: `${Math.min(100, budgetPercentage)}%` }}
+                                    ></div>
+                                  );
+                                })()}
+                                
                                 <div 
-                                  className="absolute left-0 top-0 h-full bg-gradient-to-r from-purple-500 via-pink-500 to-purple-300" 
-                                  style={{ width: `${Math.min(100, monthlyMetrics.expensePercentage)}%` }}
+                                  className="absolute top-0 h-full border-r-2 border-gray-800"
+                                  style={{ 
+                                    left: `${(() => {
+                                      // Calculate expected spending percentage based on days passed in month
+                                      const now = new Date();
+                                      const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+                                      const daysPassed = now.getDate();
+                                      return (daysPassed / daysInMonth) * 100;
+                                    })()}%`,
+                                    opacity: 0.7
+                                  }}
                                 ></div>
                               </div>
                               <div className="flex justify-between text-xs text-gray-500">
                                 <span>$0</span>
-                                <span>Expenses: ${monthlyMetrics.expenses.toFixed(2)}</span>
-                                <span>Income: ${monthlyMetrics.income.toFixed(2)}</span>
+                                <span>
+                                  {(() => {
+                                    const now = new Date();
+                                    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+                                    const daysPassed = now.getDate();
+                                    const expectedPercentage = (daysPassed / daysInMonth) * 100;
+                                    
+                                    return `Expected: ${expectedPercentage.toFixed(0)}% spent by day ${daysPassed}`;
+                                  })()}
+                                </span>
+                                <span>
+                                  {(() => {
+                                    const categories = calculateCategorySpending();
+                                    const totalAdaptiveBudget = categories.reduce((sum, cat) => sum + cat.adaptiveBudget, 0);
+                                    return `Budget: $${totalAdaptiveBudget.toFixed(2)}`;
+                                  })()}
+                                </span>
                               </div>
                             </div>
                           );
