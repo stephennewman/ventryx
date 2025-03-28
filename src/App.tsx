@@ -168,7 +168,7 @@ const App: React.FC = () => {
         return txDate.getMonth() === currentMonth && txDate.getFullYear() === currentYear;
       });
       
-      const currentMonthTotal = currentMonthTransactions.reduce((sum: number, t: Transaction) => sum + t.amount, 0);
+      const currentMonthTotal = currentMonthTransactions.reduce((sum: number, t: Transaction) => sum + Math.abs(t.amount), 0);
       
       // Calculate historical monthly averages
       const txDates = data.transactions.map(t => new Date(t.date));
@@ -194,7 +194,7 @@ const App: React.FC = () => {
       });
       
       // Calculate recent monthly average
-      const recentTotal = recentTransactions.reduce((sum, t) => sum + t.amount, 0);
+      const recentTotal = recentTransactions.reduce((sum, t) => sum + Math.abs(t.amount), 0);
       const recentMonths = Math.min(3, monthsSpan);
       const recentTrendSpend = recentTotal / recentMonths;
       
@@ -789,11 +789,11 @@ const App: React.FC = () => {
                                     <div 
                                       className="relative w-36 h-36 rounded-full" 
                                       style={{ background: `conic-gradient(
-                                        #8b5cf6 0% ${topCategories[0]?.percentage || 0}%, 
-                                        #ec4899 ${topCategories[0]?.percentage || 0}% ${(topCategories[0]?.percentage || 0) + (topCategories[1]?.percentage || 0)}%, 
-                                        #06b6d4 ${(topCategories[0]?.percentage || 0) + (topCategories[1]?.percentage || 0)}% ${(topCategories[0]?.percentage || 0) + (topCategories[1]?.percentage || 0) + (topCategories[2]?.percentage || 0)}%, 
-                                        #8b5cf6 ${(topCategories[0]?.percentage || 0) + (topCategories[1]?.percentage || 0) + (topCategories[2]?.percentage || 0)}% ${(topCategories[0]?.percentage || 0) + (topCategories[1]?.percentage || 0) + (topCategories[2]?.percentage || 0) + (topCategories[3]?.percentage || 0)}%, 
-                                        #0ea5e9 ${(topCategories[0]?.percentage || 0) + (topCategories[1]?.percentage || 0) + (topCategories[2]?.percentage || 0) + (topCategories[3]?.percentage || 0)}% 100%
+                                        #8b5cf6 0% ${Math.min(100, topCategories[0]?.percentage || 0)}%, 
+                                        #ec4899 ${Math.min(100, topCategories[0]?.percentage || 0)}% ${Math.min(100, (topCategories[0]?.percentage || 0) + (topCategories[1]?.percentage || 0))}%, 
+                                        #06b6d4 ${Math.min(100, (topCategories[0]?.percentage || 0) + (topCategories[1]?.percentage || 0))}% ${Math.min(100, (topCategories[0]?.percentage || 0) + (topCategories[1]?.percentage || 0) + (topCategories[2]?.percentage || 0))}%, 
+                                        #8b5cf6 ${Math.min(100, (topCategories[0]?.percentage || 0) + (topCategories[1]?.percentage || 0) + (topCategories[2]?.percentage || 0))}% ${Math.min(100, (topCategories[0]?.percentage || 0) + (topCategories[1]?.percentage || 0) + (topCategories[2]?.percentage || 0) + (topCategories[3]?.percentage || 0))}%, 
+                                        #0ea5e9 ${Math.min(100, (topCategories[0]?.percentage || 0) + (topCategories[1]?.percentage || 0) + (topCategories[2]?.percentage || 0) + (topCategories[3]?.percentage || 0))}% 100%
                                       )` }}
                                     >
                                       <div className="absolute inset-[15%] bg-white rounded-full flex items-center justify-center">
@@ -825,7 +825,7 @@ const App: React.FC = () => {
                                           <div className="w-full bg-gray-100 rounded-full h-1.5 mt-1">
                                             <div 
                                               className={finalColorClass + " h-1.5 rounded-full"} 
-                                              style={{ width: `${category.percentage}%` }}
+                                              style={{ width: `${Math.min(100, Math.abs(category.percentage))}%` }}
                                             ></div>
                                           </div>
                                         </div>
