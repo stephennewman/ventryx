@@ -47,7 +47,6 @@ const App: React.FC = () => {
   const [generatedText, setGeneratedText] = useState<string | null>(null);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [userStateLoading, setUserStateLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'account' | 'budget'>('account');
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -256,119 +255,79 @@ const App: React.FC = () => {
                   </div>
                 </div>
                 
-                {/* Tab Navigation */}
-                <div className="mb-6">
-                  <div className="flex space-x-4 border-b border-gray-200">
+                <div className="flex items-center justify-between mb-4">
+                  {(accounts?.length || 0) === 0 && (
                     <button
-                      className={`py-2 px-4 font-medium text-sm focus:outline-none ${
-                        activeTab === 'account'
-                          ? 'text-purple-600 border-b-2 border-purple-500'
-                          : 'text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                      }`}
-                      onClick={() => setActiveTab('account')}
+                      onClick={() => ready && open()}
+                      disabled={!ready || !linkToken || isLoading}
+                      className="font-semibold px-6 py-3 rounded-lg shadow text-white bg-gradient-to-r from-purple-500 via-pink-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 transition disabled:opacity-50 disabled:cursor-not-allowed ml-auto"
                     >
-                      Account Data
+                      {isLoading ? 'Loading...' : 'Connect Your Bank Account'}
                     </button>
-                    <button
-                      className={`py-2 px-4 font-medium text-sm focus:outline-none ${
-                        activeTab === 'budget'
-                          ? 'text-purple-600 border-b-2 border-purple-500'
-                          : 'text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                      }`}
-                      onClick={() => setActiveTab('budget')}
-                    >
-                      Budget
-                    </button>
-                  </div>
+                  )}
                 </div>
-                
-                {/* Account Data Tab Content */}
-                {activeTab === 'account' && (
-                  <>
-                    <div className="flex items-center justify-between mb-4">
-                      {(accounts?.length || 0) === 0 && (
+
+                {error && (
+                  <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4">
+                    <span className="block sm:inline">{error}</span>
+                  </div>
+                )}
+
+                {isLoading ? (
+                  <div className="text-center py-8">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+                    <p className="mt-4 text-gray-600">Loading...</p>
+                  </div>
+                ) : (
+                  <div className="flex space-x-6">
+                    <div className="w-1/3 space-y-8">
+                      {(accounts || []).map(account => (
+                        <div
+                          key={account.account_id}
+                          className={`bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 p-4 rounded-lg shadow-md cursor-pointer text-left ${
+                            selectedAccountId === account.account_id ? 'ring-2 ring-purple-500' : ''
+                          }`}
+                          onClick={() => {
+                            setSelectedAccountId(prevId => 
+                              prevId === account.account_id ? null : account.account_id
+                            );
+                          }}
+                        >
+                          <h3 className="text-lg font-semibold text-left">{account.name}</h3>
+                          <p className="text-sm text-gray-600 text-left">{account.type}</p>
+                          <p className="text-xl font-bold text-left">${account.balances.current?.toFixed(2)}</p>
+                        </div>
+                      ))}
+
+                      {(accounts?.length || 0) > 0 && (
                         <button
                           onClick={() => ready && open()}
                           disabled={!ready || !linkToken || isLoading}
-                          className="font-semibold px-6 py-3 rounded-lg shadow text-white bg-gradient-to-r from-purple-500 via-pink-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 transition disabled:opacity-50 disabled:cursor-not-allowed ml-auto"
+                          className="w-full bg-white p-4 rounded-lg shadow-md text-left border-2 border-dashed border-purple-200 hover:border-purple-400 transition-colors"
                         >
-                          {isLoading ? 'Loading...' : 'Connect Your Bank Account'}
+                          <div className="flex items-center">
+                            <div className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-500 via-pink-500 to-blue-500 flex items-center justify-center text-white mr-3">
+                              <span className="text-xl font-bold">+</span>
+                            </div>
+                            <div>
+                              <h3 className="text-lg font-semibold text-purple-700">Connected</h3>
+                              <p className="text-sm text-gray-600">Add Another Account</p>
+                            </div>
+                          </div>
                         </button>
                       )}
                     </div>
 
-                    {error && (
-                      <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4">
-                        <span className="block sm:inline">{error}</span>
-                      </div>
-                    )}
-
-                    {isLoading ? (
-                      <div className="text-center py-8">
-                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
-                        <p className="mt-4 text-gray-600">Loading...</p>
-                      </div>
-                    ) : (
-                      <div className="flex space-x-6">
-                        <div className="w-1/3 space-y-8">
-                          {(accounts || []).map(account => (
-                            <div
-                              key={account.account_id}
-                              className={`bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 p-4 rounded-lg shadow-md cursor-pointer text-left ${
-                                selectedAccountId === account.account_id ? 'ring-2 ring-purple-500' : ''
-                              }`}
-                              onClick={() => {
-                                setSelectedAccountId(prevId => 
-                                  prevId === account.account_id ? null : account.account_id
-                                );
-                              }}
-                            >
-                              <h3 className="text-lg font-semibold text-left">{account.name}</h3>
-                              <p className="text-sm text-gray-600 text-left">{account.type}</p>
-                              <p className="text-xl font-bold text-left">${account.balances.current?.toFixed(2)}</p>
-                            </div>
-                          ))}
-
-                          {(accounts?.length || 0) > 0 && (
-                            <button
-                              onClick={() => ready && open()}
-                              disabled={!ready || !linkToken || isLoading}
-                              className="w-full bg-white p-4 rounded-lg shadow-md text-left border-2 border-dashed border-purple-200 hover:border-purple-400 transition-colors"
-                            >
-                              <div className="flex items-center">
-                                <div className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-500 via-pink-500 to-blue-500 flex items-center justify-center text-white mr-3">
-                                  <span className="text-xl font-bold">+</span>
-                                </div>
-                                <div>
-                                  <h3 className="text-lg font-semibold text-purple-700">Connected</h3>
-                                  <p className="text-sm text-gray-600">Add Another Account</p>
-                                </div>
-                              </div>
-                            </button>
+                    <div className="w-2/3">
+                      {(accounts || []).length > 0 && (
+                        <TransactionFeed
+                          transactions={(transactions || []).filter(
+                            transaction => !selectedAccountId || transaction.account_id === selectedAccountId
                           )}
-                        </div>
-
-                        <div className="w-2/3">
-                          {(accounts || []).length > 0 && (
-                            <TransactionFeed
-                              transactions={(transactions || []).filter(
-                                transaction => !selectedAccountId || transaction.account_id === selectedAccountId
-                              )}
-                              selectedAccountId={selectedAccountId}
-                              onClearAccountFilter={() => setSelectedAccountId(null)}
-                            />
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </>
-                )}
-                
-                {/* Budget Tab Content */}
-                {activeTab === 'budget' && (
-                  <div className="py-8">
-                    <div className="text-center text-gray-500">
-                      <p className="text-lg">Budget feature coming soon</p>
+                          selectedAccountId={selectedAccountId}
+                          onClearAccountFilter={() => setSelectedAccountId(null)}
+                        />
+                      )}
                     </div>
                   </div>
                 )}
