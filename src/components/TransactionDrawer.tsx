@@ -215,6 +215,21 @@ Write in a natural, conversational tone that sounds like something a thoughtful 
       (t.merchant_name || t.name) === merchantName
     );
 
+    // Get category of the current transaction
+    const transactionCategory = transaction.category && transaction.category.length > 0 
+      ? transaction.category[0] 
+      : null;
+
+    // Find all transactions in the same primary category for broader analysis
+    const categoryTransactions = transactionCategory 
+      ? transactions.filter(t => 
+          t.category && 
+          t.category.length > 0 && 
+          t.category[0] === transactionCategory &&
+          (isIncoming ? t.amount < 0 : t.amount > 0) // Match income vs expense
+        )
+      : [];
+
     const totalSpent = merchantTransactions.reduce((sum, t) => sum + Math.abs(t.amount), 0);
     const averageSpent = totalSpent / merchantTransactions.length;
     const frequency = merchantTransactions.length;
@@ -230,6 +245,21 @@ Write in a natural, conversational tone that sounds like something a thoughtful 
     
     // Identify all income transactions for income analysis
     const allIncomeTransactions = transactions.filter(t => t.amount < 0);
+
+    // Category spending analysis
+    const categorySummary = transactionCategory ? {
+      name: transactionCategory,
+      totalSpent: categoryTransactions.reduce((sum, t) => sum + Math.abs(t.amount), 0),
+      count: categoryTransactions.length,
+      percentOfMerchant: categoryTransactions.length > 0 
+        ? (merchantTransactions.length / categoryTransactions.length) * 100 
+        : 0,
+      averageAmount: categoryTransactions.length > 0 
+        ? categoryTransactions.reduce((sum, t) => sum + Math.abs(t.amount), 0) / categoryTransactions.length 
+        : 0,
+      categoryRank: 0, // Will calculate below
+      totalCategories: 0 // Will calculate below
+    } : null;
     
     // New: Create merchant spending ranking
     let merchantRank = 0;
@@ -283,6 +313,34 @@ Write in a natural, conversational tone that sounds like something a thoughtful 
       // Find the rank of the current merchant
       merchantRank = merchantSpending.findIndex(m => m.name === merchantName) + 1;
       totalMerchants = merchantSpending.length;
+
+      // Calculate category rankings if we have category data
+      if (transactionCategory) {
+        // Get unique categories from expense transactions
+        const categories = new Set<string>();
+        const categorySpending: {[key: string]: number} = {};
+        
+        expenseTransactions.forEach(t => {
+          if (t.category && t.category.length > 0) {
+            const cat = t.category[0];
+            categories.add(cat);
+            if (!categorySpending[cat]) categorySpending[cat] = 0;
+            categorySpending[cat] += Math.abs(t.amount);
+          }
+        });
+        
+        // Convert to array and sort by spending amount
+        const categoryRankings = Array.from(categories).map(cat => ({
+          name: cat,
+          total: categorySpending[cat]
+        })).sort((a, b) => b.total - a.total);
+        
+        // Find rank of current category
+        if (categorySummary) {
+          categorySummary.categoryRank = categoryRankings.findIndex(c => c.name === transactionCategory) + 1;
+          categorySummary.totalCategories = categoryRankings.length;
+        }
+      }
     }
     
     // For income specific analysis
@@ -382,7 +440,9 @@ Write in a natural, conversational tone that sounds like something a thoughtful 
       percentOfIncome,
       incomeDetail,
       merchantRank,
-      totalMerchants
+      totalMerchants,
+      category: categorySummary,
+      hasCategory: !!transactionCategory
     };
   };
 
@@ -571,8 +631,40 @@ Write in a natural, conversational tone that sounds like something a thoughtful 
                       )}
                     </div>
                     
+                    {/* Add category analysis when available */}
+                    {stats.hasCategory && stats.category && (
+                      <div className="flex items-center justify-center mt-4">
+                        <div className="bg-green-50 rounded-lg p-4 border border-green-200 w-full">
+                          <h5 className="text-sm text-green-800 font-medium mb-2">Category Analysis: {stats.category.name}</h5>
+                          <div className="grid grid-cols-2 gap-3 text-sm">
+                            <div>
+                              <p className="text-green-700">Category Total</p>
+                              <p className="font-semibold">${stats.category.totalSpent.toFixed(2)}</p>
+                            </div>
+                            <div>
+                              <p className="text-green-700">Category Avg</p>
+                              <p className="font-semibold">${stats.category.averageAmount.toFixed(2)}</p>
+                            </div>
+                            {stats.category.categoryRank > 0 && (
+                              <div>
+                                <p className="text-green-700">Category Rank</p>
+                                <p className="font-semibold">#{stats.category.categoryRank} of {stats.category.totalCategories}</p>
+                              </div>
+                            )}
+                            <div>
+                              <p className="text-green-700">Transactions</p>
+                              <p className="font-semibold">{stats.category.count} total</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    
                     <div className="mt-3 text-sm text-blue-700 bg-blue-100 p-3 rounded-lg">
                       If you continue this spending pattern, you'll spend about ${(stats.annualPacing / 12).toFixed(2)} monthly (${stats.annualPacing.toFixed(2)} annually) at {transaction.merchant_name || transaction.name}, which is {stats.percentOfIncome.toFixed(2)}% of your income.
+                      {stats.hasCategory && stats.category && 
+                        ` This transaction is in the "${stats.category.name}" category, which accounts for ${stats.category.count} transactions in your history.`
+                      }
                     </div>
                   </>
                 )}
