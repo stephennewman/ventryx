@@ -266,10 +266,9 @@ const App: React.FC = () => {
       adaptiveBudgets[category.name] = category.adaptiveBudget;
     });
     
-    // Filter for top categories with spending and budget data
+    // Include all categories with a valid budget, even if no spending yet this month
     return categories
-      .filter(cat => (adaptiveBudgets[cat.name] || defaultBudgets[cat.name] || 0) > 0 && cat.currentMonthSpent > 0)
-      .slice(0, 3) // Top 3 categories
+      .filter(cat => (adaptiveBudgets[cat.name] || defaultBudgets[cat.name] || 0) > 0)
       .map(category => {
         // Use the adaptive budget or fall back to default
         const adaptiveBudget = adaptiveBudgets[category.name] || 0;
@@ -305,7 +304,121 @@ const App: React.FC = () => {
           trendDirection,
           trendPercentage: category.trendPercentage
         };
+      })
+      .sort((a, b) => b.adaptiveBudget - a.adaptiveBudget); // Sort by historical adaptive budget amounts (highest to lowest)
+  };
+
+  // Add new function to calculate merchant spending
+  const calculateMerchantSpending = () => {
+    if (!transactions.length) return [];
+    
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+    const daysPassed = now.getDate();
+    
+    // Calculate expected spending percentage
+    const expectedSpendingPercentage = (daysPassed / daysInMonth) * 100;
+    
+    // Get all expense transactions
+    const expenseTransactions = transactions.filter(t => t.amount > 0);
+    
+    // Group by merchant
+    const merchants = new Map<string, { totalSpent: number, currentMonthSpent: number, transactions: Transaction[] }>();
+    
+    expenseTransactions.forEach(t => {
+      if (!t.merchant_name) return; // Skip if no merchant name
+      
+      const merchantName = t.merchant_name;
+      
+      if (!merchants.has(merchantName)) {
+        merchants.set(merchantName, {
+          totalSpent: 0,
+          currentMonthSpent: 0,
+          transactions: []
+        });
+      }
+      
+      const merchantData = merchants.get(merchantName)!;
+      merchantData.totalSpent += t.amount;
+      merchantData.transactions.push(t);
+      
+      // Check if transaction is from current month
+      const txDate = new Date(t.date);
+      if (txDate.getMonth() === currentMonth && txDate.getFullYear() === currentYear) {
+        merchantData.currentMonthSpent += t.amount;
+      }
+    });
+    
+    // Convert to array and calculate additional metrics
+    const merchantArray = Array.from(merchants.entries()).map(([name, data]) => {
+      // Calculate historical monthly averages
+      const txDates = data.transactions.map((t: Transaction) => new Date(t.date));
+      const oldestDate = new Date(Math.min(...txDates.map((d: Date) => d.getTime())));
+      
+      // Calculate months between oldest transaction and now
+      const monthsDiff = (now.getMonth() - oldestDate.getMonth()) + 
+                        (12 * (now.getFullYear() - oldestDate.getFullYear()));
+      
+      // Ensure at least 1 month to avoid division by zero
+      const monthsSpan = Math.max(1, monthsDiff);
+      
+      // Historical average monthly spend
+      const historicalAvgSpend = data.totalSpent / monthsSpan;
+      
+      // Calculate recent trend (last 3 months)
+      const threeMonthsAgo = new Date(now);
+      threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+      
+      const recentTransactions = data.transactions.filter((t: Transaction) => {
+        const txDate = new Date(t.date);
+        return txDate >= threeMonthsAgo;
       });
+      
+      // Calculate recent monthly average
+      const recentTotal = recentTransactions.reduce((sum: number, t: Transaction) => sum + t.amount, 0);
+      const recentMonths = Math.min(3, monthsSpan);
+      const recentTrendSpend = recentTotal / recentMonths;
+      
+      // Calculate trend percentage
+      const trendPercentage = historicalAvgSpend > 0 
+        ? ((recentTrendSpend - historicalAvgSpend) / historicalAvgSpend) * 100 
+        : 0;
+      
+      // Determine trend direction
+      let trendDirection = 'stable';
+      if (trendPercentage > 5) trendDirection = 'increasing';
+      else if (trendPercentage < -5) trendDirection = 'decreasing';
+      
+      // Calculate if over or under pace
+      const daysRatio = daysPassed / daysInMonth;
+      const expectedMonthlySpend = historicalAvgSpend;
+      const expectedCurrentSpend = expectedMonthlySpend * daysRatio;
+      const isOverPace = data.currentMonthSpent > expectedCurrentSpend * 1.1;
+      const isUnderPace = data.currentMonthSpent < expectedCurrentSpend * 0.9;
+      
+      return {
+        name,
+        totalSpent: data.totalSpent,
+        currentMonthSpent: data.currentMonthSpent,
+        transactionCount: data.transactions.length,
+        historicalAvgSpend,
+        recentTrendSpend,
+        trendPercentage,
+        trendDirection,
+        spentPercentage: (data.currentMonthSpent / historicalAvgSpend) * 100,
+        expectedSpendingPercentage,
+        isOverPace,
+        isUnderPace,
+        frequency: data.transactions.length / monthsSpan // Average transactions per month
+      };
+    })
+    // Sort by current month spending
+    .sort((a, b) => b.currentMonthSpent - a.currentMonthSpent);
+    
+    // Return top merchants
+    return merchantArray;
   };
 
   useEffect(() => {
@@ -848,17 +961,17 @@ const App: React.FC = () => {
                           return (
                             <div className="bg-white rounded-xl shadow-sm border border-purple-100 p-5">
                               <div className="flex justify-between items-center mb-4">
-                                <h3 className="text-lg font-semibold text-gray-800">Adaptive Budget Progress</h3>
+                                <h3 className="text-lg font-semibold text-gray-800">Dynamic Budget</h3>
                                 <div className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
                                   Day {daysPassed} of {daysInMonth}
                                 </div>
                               </div>
                               
-                              <div className="space-y-5">
+                              <div className="space-y-5 max-h-[600px] overflow-y-auto pr-2">
                                 {budgetProgress.map(category => {
                                   // Calculate more accurate projections
                                   const daysRemaining = daysInMonth - daysPassed;
-                                  const dailySpendRate = category.spent / daysPassed;
+                                  const dailySpendRate = category.spent / Math.max(1, daysPassed); // Avoid division by zero
                                   const projectedAdditionalSpend = dailySpendRate * daysRemaining;
                                   const projectedTotalSpend = category.spent + projectedAdditionalSpend;
                                   const projectedPercentOfBudget = (projectedTotalSpend / category.adaptiveBudget) * 100;
@@ -888,26 +1001,30 @@ const App: React.FC = () => {
                                     
                                     {/* Main progress bar with dual colors: actual and projected */}
                                     <div className="relative h-3 bg-gray-100 rounded-full">
-                                      {/* Actual spend portion */}
-                                      <div 
-                                        className={`absolute top-0 left-0 h-full rounded-l-full ${
-                                          category.isOverPace ? 'bg-red-500' : category.isUnderPace ? 'bg-green-500' : 'bg-blue-500'
-                                        }`}
-                                        style={{ width: `${Math.min(100, category.spentPercentage)}%` }}
-                                      ></div>
+                                      {/* Actual spend portion - only show if there is spending */}
+                                      {category.spent > 0 && (
+                                        <div 
+                                          className={`absolute top-0 left-0 h-full rounded-l-full ${
+                                            category.isOverPace ? 'bg-red-500' : category.isUnderPace ? 'bg-green-500' : 'bg-blue-500'
+                                          }`}
+                                          style={{ width: `${Math.min(100, category.spentPercentage)}%` }}
+                                        ></div>
+                                      )}
                                       
-                                      {/* Projected additional spend portion */}
-                                      <div 
-                                        className={`absolute top-0 h-full ${
-                                          category.isOverPace ? 'bg-red-300' : category.isUnderPace ? 'bg-green-300' : 'bg-blue-300'
-                                        }`}
-                                        style={{ 
-                                          left: `${Math.min(100, category.spentPercentage)}%`, 
-                                          width: `${Math.min(100 - Math.min(100, category.spentPercentage), Math.min(100, projectedPercentOfBudget) - Math.min(100, category.spentPercentage))}%`,
-                                          borderTopRightRadius: projectedPercentOfBudget >= 100 ? '0.375rem' : '0',
-                                          borderBottomRightRadius: projectedPercentOfBudget >= 100 ? '0.375rem' : '0'
-                                        }}
-                                      ></div>
+                                      {/* Projected additional spend portion - only show if there is spending */}
+                                      {category.spent > 0 && (
+                                        <div 
+                                          className={`absolute top-0 h-full ${
+                                            category.isOverPace ? 'bg-red-300' : category.isUnderPace ? 'bg-green-300' : 'bg-blue-300'
+                                          }`}
+                                          style={{ 
+                                            left: `${Math.min(100, category.spentPercentage)}%`, 
+                                            width: `${Math.min(100 - Math.min(100, category.spentPercentage), Math.min(100, projectedPercentOfBudget) - Math.min(100, category.spentPercentage))}%`,
+                                            borderTopRightRadius: projectedPercentOfBudget >= 100 ? '0.375rem' : '0',
+                                            borderBottomRightRadius: projectedPercentOfBudget >= 100 ? '0.375rem' : '0'
+                                          }}
+                                        ></div>
+                                      )}
                                       
                                       <div 
                                         className="absolute top-0 h-full border-r-2 border-gray-600"
@@ -916,19 +1033,168 @@ const App: React.FC = () => {
                                     </div>
                                     
                                     <div className="flex justify-between text-xs text-gray-500">
-                                      <span className={category.isOverPace ? 'text-red-600 font-medium' : category.isUnderPace ? 'text-green-600 font-medium' : 'text-gray-600'}>
-                                        {category.spentPercentage.toFixed(0)}% spent
-                                      </span>
-                                      <span>
-                                        Projected: ${projectedTotalSpend.toFixed(0)} by month end
-                                      </span>
+                                      {category.spent > 0 ? (
+                                        <span className={category.isOverPace ? 'text-red-600 font-medium' : category.isUnderPace ? 'text-green-600 font-medium' : 'text-gray-600'}>
+                                          {category.spentPercentage.toFixed(0)}% spent
+                                        </span>
+                                      ) : (
+                                        <span className="text-gray-600">
+                                          No spending yet
+                                        </span>
+                                      )}
+                                      
+                                      {category.spent > 0 ? (
+                                        <span>
+                                          Projected: ${projectedTotalSpend.toFixed(0)} by month end
+                                        </span>
+                                      ) : (
+                                        <span>
+                                          Budget: ${category.adaptiveBudget.toFixed(0)} available
+                                        </span>
+                                      )}
                                     </div>
                                     
-                                    {/* Financial projections instead of historical context */}
+                                    {/* Only show rate details if there's actual spending */}
+                                    {category.spent > 0 && (
+                                      <div className="bg-gray-50 p-2 rounded text-xs mt-1">
+                                        <div className="flex justify-between">
+                                          <span className="text-gray-600">Daily Rate:</span>
+                                          <span className="font-medium">${dailySpendRate.toFixed(2)}/day</span>
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                )})}
+                              </div>
+                            </div>
+                          );
+                        })()}
+                        
+                        {/* Merchant Spending Card - Based on merchant data */}
+                        {(() => {
+                          const merchantData = calculateMerchantSpending();
+                          if (!merchantData.length) return null;
+                          
+                          // Date information for context
+                          const now = new Date();
+                          const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+                          const daysPassed = now.getDate();
+                          
+                          // Get top merchants to display
+                          const topMerchants = merchantData.slice(0, 10);
+                          
+                          return (
+                            <div className="bg-white rounded-xl shadow-sm border border-purple-100 p-5 mt-6">
+                              <div className="flex justify-between items-center mb-4">
+                                <h3 className="text-lg font-semibold text-gray-800">Merchant Spending</h3>
+                                <div className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                                  Day {daysPassed} of {daysInMonth}
+                                </div>
+                              </div>
+                              
+                              <div className="space-y-5 max-h-[600px] overflow-y-auto pr-2">
+                                {topMerchants.map(merchant => {
+                                  // Calculate more accurate projections
+                                  const daysRemaining = daysInMonth - daysPassed;
+                                  const dailySpendRate = merchant.currentMonthSpent / Math.max(1, daysPassed); // Avoid division by zero
+                                  const projectedAdditionalSpend = dailySpendRate * daysRemaining;
+                                  const projectedTotalSpend = merchant.currentMonthSpent + projectedAdditionalSpend;
+                                  const projectedPercentOfAverage = (projectedTotalSpend / merchant.historicalAvgSpend) * 100;
+                                  
+                                  const frequencyLabel = merchant.frequency >= 4 
+                                    ? 'Weekly' 
+                                    : merchant.frequency >= 1 
+                                      ? 'Monthly' 
+                                      : merchant.frequency >= 0.25 
+                                        ? 'Quarterly' 
+                                        : 'Occasional';
+                                  
+                                  return (
+                                  <div className="space-y-2" key={merchant.name}>
+                                    <div className="flex justify-between items-center">
+                                      <div className="flex items-center">
+                                        <span className="font-medium text-sm">{merchant.name}</span>
+                                        <span className="ml-2 text-xs px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-800">
+                                          {frequencyLabel}
+                                        </span>
+                                        {merchant.trendDirection !== 'stable' && (
+                                          <span className={`ml-2 text-xs px-1.5 py-0.5 rounded-full ${
+                                            merchant.trendDirection === 'increasing' 
+                                              ? 'bg-yellow-100 text-yellow-800' 
+                                              : 'bg-green-100 text-green-800'
+                                          }`}>
+                                            {merchant.trendDirection === 'increasing' 
+                                              ? `↑ ${Math.abs(merchant.trendPercentage).toFixed(0)}%` 
+                                              : `↓ ${Math.abs(merchant.trendPercentage).toFixed(0)}%`}
+                                          </span>
+                                        )}
+                                      </div>
+                                      <div className="text-right">
+                                        <span className="text-sm font-bold">${merchant.currentMonthSpent.toFixed(0)}</span>
+                                        <span className="text-sm text-gray-500"> / ${merchant.historicalAvgSpend.toFixed(0)}</span>
+                                      </div>
+                                    </div>
+                                    
+                                    {/* Main progress bar with dual colors: actual and projected */}
+                                    <div className="relative h-3 bg-gray-100 rounded-full">
+                                      {/* Actual spend portion - only show if there is spending */}
+                                      {merchant.currentMonthSpent > 0 && (
+                                        <div 
+                                          className={`absolute top-0 left-0 h-full rounded-l-full ${
+                                            merchant.isOverPace ? 'bg-red-500' : merchant.isUnderPace ? 'bg-green-500' : 'bg-blue-500'
+                                          }`}
+                                          style={{ width: `${Math.min(100, merchant.spentPercentage)}%` }}
+                                        ></div>
+                                      )}
+                                      
+                                      {/* Projected additional spend portion - only show if there is spending */}
+                                      {merchant.currentMonthSpent > 0 && (
+                                        <div 
+                                          className={`absolute top-0 h-full ${
+                                            merchant.isOverPace ? 'bg-red-300' : merchant.isUnderPace ? 'bg-green-300' : 'bg-blue-300'
+                                          }`}
+                                          style={{ 
+                                            left: `${Math.min(100, merchant.spentPercentage)}%`, 
+                                            width: `${Math.min(100 - Math.min(100, merchant.spentPercentage), Math.min(100, projectedPercentOfAverage) - Math.min(100, merchant.spentPercentage))}%`,
+                                            borderTopRightRadius: projectedPercentOfAverage >= 100 ? '0.375rem' : '0',
+                                            borderBottomRightRadius: projectedPercentOfAverage >= 100 ? '0.375rem' : '0'
+                                          }}
+                                        ></div>
+                                      )}
+                                      
+                                      <div 
+                                        className="absolute top-0 h-full border-r-2 border-gray-600"
+                                        style={{ left: `${merchant.expectedSpendingPercentage}%` }}
+                                      ></div>
+                                    </div>
+                                    
+                                    <div className="flex justify-between text-xs text-gray-500">
+                                      {merchant.currentMonthSpent > 0 ? (
+                                        <span className={merchant.isOverPace ? 'text-red-600 font-medium' : merchant.isUnderPace ? 'text-green-600 font-medium' : 'text-gray-600'}>
+                                          {merchant.spentPercentage.toFixed(0)}% of monthly avg
+                                        </span>
+                                      ) : (
+                                        <span className="text-gray-600">
+                                          No spending yet
+                                        </span>
+                                      )}
+                                      
+                                      {merchant.currentMonthSpent > 0 ? (
+                                        <span>
+                                          Projected: ${projectedTotalSpend.toFixed(0)} by month end
+                                        </span>
+                                      ) : (
+                                        <span>
+                                          Avg: ${merchant.historicalAvgSpend.toFixed(0)}/month
+                                        </span>
+                                      )}
+                                    </div>
+                                    
+                                    {/* Transaction frequency and last visit */}
                                     <div className="bg-gray-50 p-2 rounded text-xs mt-1">
                                       <div className="flex justify-between">
-                                        <span className="text-gray-600">Daily Rate:</span>
-                                        <span className="font-medium">${dailySpendRate.toFixed(2)}/day</span>
+                                        <span className="text-gray-600">Transaction History:</span>
+                                        <span className="font-medium">{merchant.transactionCount} visits ({(merchant.frequency).toFixed(1)}/month)</span>
                                       </div>
                                     </div>
                                   </div>
