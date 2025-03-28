@@ -89,19 +89,24 @@ const App: React.FC = () => {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [userStateLoading, setUserStateLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'account' | 'budget'>('account');
+  
+  // Add state for selected month and year
+  const currentDate = new Date();
+  const [selectedMonth, setSelectedMonth] = useState<number>(currentDate.getMonth());
+  const [selectedYear, setSelectedYear] = useState<number>(currentDate.getFullYear());
 
   // Add helper functions for budget calculations
   const calculateMonthlyMetrics = (): MonthlyMetrics | null => {
     if (!transactions.length) return null;
     
-    const now = new Date();
-    const currentMonth = now.getMonth();
-    const currentYear = now.getFullYear();
+    // Use the selected month and year instead of current date
+    const targetMonth = selectedMonth;
+    const targetYear = selectedYear;
     
-    // Filter for current month transactions
+    // Filter for selected month transactions
     const currentMonthTransactions = transactions.filter(t => {
       const txDate = new Date(t.date);
-      return txDate.getMonth() === currentMonth && txDate.getFullYear() === currentYear;
+      return txDate.getMonth() === targetMonth && txDate.getFullYear() === targetYear;
     });
     
     // Calculate income (negative amounts in transactions are income)
@@ -131,9 +136,9 @@ const App: React.FC = () => {
   const calculateCategorySpending = (): CategorySpending[] => {
     if (!transactions.length) return [];
     
-    const now = new Date();
-    const currentMonth = now.getMonth();
-    const currentYear = now.getFullYear();
+    // Use the selected month and year instead of current date
+    const targetMonth = selectedMonth;
+    const targetYear = selectedYear;
     
     // Get all expense transactions AND payment transactions
     // Include both expense (positive amount) and payment (negative amount) transactions
@@ -165,7 +170,7 @@ const App: React.FC = () => {
       // Get current month data
       const currentMonthTransactions = data.transactions.filter((t: Transaction) => {
         const txDate = new Date(t.date);
-        return txDate.getMonth() === currentMonth && txDate.getFullYear() === currentYear;
+        return txDate.getMonth() === targetMonth && txDate.getFullYear() === targetYear;
       });
       
       const currentMonthTotal = currentMonthTransactions.reduce((sum: number, t: Transaction) => sum + Math.abs(t.amount), 0);
@@ -175,6 +180,7 @@ const App: React.FC = () => {
       const oldestDate = new Date(Math.min(...txDates.map(d => d.getTime())));
       
       // Calculate months between oldest transaction and now
+      const now = new Date();
       const monthsDiff = (now.getMonth() - oldestDate.getMonth()) + 
                         (12 * (now.getFullYear() - oldestDate.getFullYear()));
       
@@ -236,11 +242,15 @@ const App: React.FC = () => {
   const calculateBudgetProgress = (): BudgetProgress[] => {
     if (!transactions.length) return [];
     
+    // Use the selected month and year instead of current date
+    const targetMonth = selectedMonth;
+    const targetYear = selectedYear;
+    const daysInMonth = new Date(targetYear, targetMonth + 1, 0).getDate();
     const now = new Date();
-    const currentMonth = now.getMonth();
-    const currentYear = now.getFullYear();
-    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
-    const daysPassed = now.getDate();
+    
+    // For past months, use the full month. For current month, use current day.
+    const isCurrentMonth = now.getMonth() === targetMonth && now.getFullYear() === targetYear;
+    const daysPassed = isCurrentMonth ? now.getDate() : daysInMonth;
     
     // Calculate expected spending percentage
     const expectedSpendingPercentage = (daysPassed / daysInMonth) * 100;
@@ -305,6 +315,46 @@ const App: React.FC = () => {
         };
       })
       .sort((a, b) => b.adaptiveBudget - a.adaptiveBudget); // Sort by historical adaptive budget amounts (highest to lowest)
+  };
+
+  // Add helper functions for date selection
+  // Get array of month names
+  const getMonthNames = (): string[] => {
+    const months = [];
+    for (let i = 0; i < 12; i++) {
+      months.push(new Date(2000, i, 1).toLocaleString('default', { month: 'long' }));
+    }
+    return months;
+  };
+  
+  // Get array of available years (from oldest transaction to current year)
+  const getAvailableYears = (): number[] => {
+    if (!transactions.length) return [currentDate.getFullYear()];
+    
+    const years = new Set<number>();
+    const currentYear = currentDate.getFullYear();
+    
+    // Add current year and previous year by default
+    years.add(currentYear);
+    years.add(currentYear - 1);
+    
+    // Add all years from transactions
+    transactions.forEach(t => {
+      const txDate = new Date(t.date);
+      years.add(txDate.getFullYear());
+    });
+    
+    return Array.from(years).sort((a, b) => b - a); // Sort descending
+  };
+
+  // Handle month change
+  const handleMonthChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setSelectedMonth(parseInt(e.target.value));
+  };
+  
+  // Handle year change
+  const handleYearChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setSelectedYear(parseInt(e.target.value));
   };
 
   useEffect(() => {
@@ -643,14 +693,67 @@ const App: React.FC = () => {
                       </div>
                     ) : (
                       <div className="grid grid-cols-1 gap-6">
+                        {/* Add Date Selector */}
+                        <div className="bg-white rounded-xl shadow-sm border border-purple-100 p-4">
+                          <div className="flex items-center justify-between">
+                            <h3 className="text-lg font-semibold text-gray-800">Budget Period</h3>
+                            <div className="flex space-x-4">
+                              <div className="relative">
+                                <select
+                                  value={selectedMonth}
+                                  onChange={handleMonthChange}
+                                  className="appearance-none block w-full bg-white border border-gray-300 rounded-md py-2 pl-3 pr-10 text-base focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent cursor-pointer"
+                                >
+                                  {getMonthNames().map((month, index) => (
+                                    <option key={index} value={index}>
+                                      {month}
+                                    </option>
+                                  ))}
+                                </select>
+                                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                                  <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                                  </svg>
+                                </div>
+                              </div>
+                              <div className="relative">
+                                <select
+                                  value={selectedYear}
+                                  onChange={handleYearChange}
+                                  className="appearance-none block w-full bg-white border border-gray-300 rounded-md py-2 pl-3 pr-10 text-base focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent cursor-pointer"
+                                >
+                                  {getAvailableYears().map(year => (
+                                    <option key={year} value={year}>
+                                      {year}
+                                    </option>
+                                  ))}
+                                </select>
+                                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                                  <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                                  </svg>
+                                </div>
+                              </div>
+                              <button 
+                                onClick={() => {
+                                  setSelectedMonth(currentDate.getMonth());
+                                  setSelectedYear(currentDate.getFullYear());
+                                }}
+                                className="px-4 py-2 bg-purple-100 text-purple-700 rounded-md hover:bg-purple-200 transition"
+                              >
+                                Current Month
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+
                         {/* Monthly Overview Card - Using actual transaction data */}
                         {(() => {
                           const monthlyMetrics = calculateMonthlyMetrics();
                           if (!monthlyMetrics) return null;
                           
-                          const now = new Date();
-                          const monthName = now.toLocaleString('default', { month: 'long' });
-                          const year = now.getFullYear();
+                          const monthName = new Date(selectedYear, selectedMonth, 1).toLocaleString('default', { month: 'long' });
+                          const year = selectedYear;
                           
                           return (
                             <div className="bg-white rounded-xl shadow-sm border border-purple-100 p-5">
@@ -778,9 +881,12 @@ const App: React.FC = () => {
                           // Calculate total for pie chart
                           const totalSpending = categories.reduce((sum, cat) => sum + cat.currentMonthSpent, 0);
                           
+                          // Get month name for display
+                          const monthName = new Date(selectedYear, selectedMonth, 1).toLocaleString('default', { month: 'long' });
+                          
                           return (
                             <div className="bg-white rounded-xl shadow-sm border border-purple-100 p-5">
-                              <h3 className="text-lg font-semibold text-gray-800 mb-4">Spending by Category</h3>
+                              <h3 className="text-lg font-semibold text-gray-800 mb-4">Spending by Category - {monthName} {selectedYear}</h3>
                               
                               <div className="grid grid-cols-2 gap-6">
                                 <div className="flex flex-col justify-center">
@@ -840,16 +946,26 @@ const App: React.FC = () => {
                           if (!budgetProgress.length) return null;
                           
                           // Date information for context
+                          const daysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
                           const now = new Date();
-                          const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-                          const daysPassed = now.getDate();
+                          
+                          // For past months, use the full month. For current month, use current day.
+                          const isCurrentMonth = now.getMonth() === selectedMonth && now.getFullYear() === selectedYear;
+                          const daysPassed = isCurrentMonth ? now.getDate() : daysInMonth;
+                          
+                          // Get month name for display
+                          const monthName = new Date(selectedYear, selectedMonth, 1).toLocaleString('default', { month: 'long' });
+                          const isHistorical = selectedYear < now.getFullYear() || 
+                                              (selectedYear === now.getFullYear() && selectedMonth < now.getMonth());
                           
                           return (
                             <div className="bg-white rounded-xl shadow-sm border border-purple-100 p-5">
                               <div className="flex justify-between items-center mb-4">
-                                <h3 className="text-lg font-semibold text-gray-800">Dynamic Budget</h3>
+                                <h3 className="text-lg font-semibold text-gray-800">
+                                  {isHistorical ? `${monthName} ${selectedYear} Budget (Historical)` : "Dynamic Budget"}
+                                </h3>
                                 <div className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
-                                  Day {daysPassed} of {daysInMonth}
+                                  {isHistorical ? "Full Month" : `Day ${daysPassed} of ${daysInMonth}`}
                                 </div>
                               </div>
                               
@@ -897,8 +1013,8 @@ const App: React.FC = () => {
                                         ></div>
                                       )}
                                       
-                                      {/* Projected additional spend portion - only show if there is spending */}
-                                      {category.spent > 0 && (
+                                      {/* Projected additional spend portion - only show if there is spending and not historical */}
+                                      {!isHistorical && category.spent > 0 && (
                                         <div 
                                           className={`absolute top-0 h-full ${
                                             category.isOverPace ? 'bg-red-300' : category.isUnderPace ? 'bg-green-300' : 'bg-blue-300'
@@ -912,10 +1028,13 @@ const App: React.FC = () => {
                                         ></div>
                                       )}
                                       
-                                      <div 
-                                        className="absolute top-0 h-full border-r-2 border-gray-600"
-                                        style={{ left: `${category.expectedSpendingPercentage}%` }}
-                                      ></div>
+                                      {/* Only show expected pace marker if not historical */}
+                                      {!isHistorical && (
+                                        <div 
+                                          className="absolute top-0 h-full border-r-2 border-gray-600"
+                                          style={{ left: `${category.expectedSpendingPercentage}%` }}
+                                        ></div>
+                                      )}
                                     </div>
                                     
                                     <div className="flex justify-between text-xs text-gray-500">
@@ -929,7 +1048,7 @@ const App: React.FC = () => {
                                         </span>
                                       )}
                                       
-                                      {category.spent > 0 ? (
+                                      {!isHistorical && category.spent > 0 ? (
                                         <span>
                                           Projected: ${projectedTotalSpend.toFixed(0)} by month end
                                         </span>
@@ -940,8 +1059,8 @@ const App: React.FC = () => {
                                       )}
                                     </div>
                                     
-                                    {/* Only show rate details if there's actual spending */}
-                                    {category.spent > 0 && (
+                                    {/* Only show rate details if there's actual spending and not historical */}
+                                    {!isHistorical && category.spent > 0 && (
                                       <div className="bg-gray-50 p-2 rounded text-xs mt-1">
                                         <div className="flex justify-between">
                                           <span className="text-gray-600">Daily Rate:</span>
