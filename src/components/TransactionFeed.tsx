@@ -13,7 +13,7 @@ interface TransactionFeedProps {
 
 // Custom input component for the date picker
 const CustomDateInput = React.forwardRef<HTMLButtonElement, React.ComponentProps<'button'>>(({ onClick }, ref) => (
-  <button className="p-2 border rounded flex items-center justify-center" onClick={onClick} ref={ref}>
+  <button className="p-2 border rounded flex items-center justify-center h-10 border-purple-300 bg-purple-50 text-purple-800" onClick={onClick} ref={ref}>
     <FaCalendarAlt className="text-purple-600" />
   </button>
 ));
