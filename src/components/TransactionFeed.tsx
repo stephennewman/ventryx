@@ -135,7 +135,6 @@ const TransactionFeed: React.FC<TransactionFeedProps> = ({ transactions, selecte
           onChange={(e) => setSearchQuery(e.target.value)}
         className="p-2 border border-purple-300 rounded bg-purple-50 text-purple-800 w-64"
         />
-        <label htmlFor="sort" className="mr-2">Sort by:</label>
         <div className="relative">
           <select
             id="sort"
