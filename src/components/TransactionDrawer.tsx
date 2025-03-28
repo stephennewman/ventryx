@@ -265,6 +265,9 @@ Write in a natural, conversational tone that sounds like something a thoughtful 
     
     // Identify all income transactions for income analysis - filtered by account
     const allIncomeTransactions = transactions.filter(t => t.amount < 0 && t.account_id === accountId);
+    
+    // Also get ALL income transactions across ALL accounts for total income comparison
+    const allIncomeTransactionsAcrossAccounts = transactions.filter(t => t.amount < 0);
 
     // Category spending analysis
     const categorySummary = transactionCategory ? {
@@ -363,8 +366,9 @@ Write in a natural, conversational tone that sounds like something a thoughtful 
       }
     }
     
-    // For income specific analysis
+    // For income specific analysis - using ALL accounts
     let annualIncome = 50000; // Default fallback annual income
+    let totalAccountAnnualIncome = 50000; // Default for this specific account
     
     // Define types for our income tracking objects
     interface IncomeSourceInfo {
@@ -393,6 +397,7 @@ Write in a natural, conversational tone that sounds like something a thoughtful 
       incomeBySource: {}
     };
     
+    // Calculate income for this specific account
     if (allIncomeTransactions.length > 0) {
       const totalIncome = allIncomeTransactions.reduce((sum, t) => sum + Math.abs(t.amount), 0);
       const oldestIncomeTransaction = new Date(Math.min(...allIncomeTransactions.map(t => new Date(t.date).getTime())));
@@ -402,10 +407,10 @@ Write in a natural, conversational tone that sounds like something a thoughtful 
       const monthlyIncomeAverage = (totalIncome / daysSinceFirstIncome) * 30;
       
       // Annual income is monthly * 12
-      annualIncome = monthlyIncomeAverage * 12;
+      totalAccountAnnualIncome = monthlyIncomeAverage * 12;
       
       incomeDetail.totalMonthlyIncome = monthlyIncomeAverage;
-      incomeDetail.totalAnnualIncome = annualIncome;
+      incomeDetail.totalAnnualIncome = totalAccountAnnualIncome;
       
       // Group income by source for a breakdown
       const incomeBySource: IncomeBySourceMap = {};
@@ -435,24 +440,44 @@ Write in a natural, conversational tone that sounds like something a thoughtful 
           info.monthlyAverage = (info.amount / daysSince) * 30;
           // Annual pace is monthly * 12
           info.annualPace = info.monthlyAverage * 12;
-          info.percentOfTotal = (info.annualPace / annualIncome) * 100;
+          info.percentOfTotal = (info.annualPace / totalAccountAnnualIncome) * 100;
         }
       });
       
       incomeDetail.incomeBySource = incomeBySource;
     }
     
-    // For income transactions, calculate percentage as source income relative to total account income
-    // For expense transactions, calculate what percent of annual income is spent on this merchant
+    // Calculate overall income across all accounts
+    if (allIncomeTransactionsAcrossAccounts.length > 0) {
+      const totalIncomeAllAccounts = allIncomeTransactionsAcrossAccounts.reduce((sum, t) => sum + Math.abs(t.amount), 0);
+      const oldestIncomeTransactionAllAccounts = new Date(Math.min(...allIncomeTransactionsAcrossAccounts.map(t => new Date(t.date).getTime())));
+      const daysSinceFirstIncomeAllAccounts = Math.ceil((new Date().getTime() - oldestIncomeTransactionAllAccounts.getTime()) / (1000 * 3600 * 24));
+      
+      // Calculate monthly income across all accounts
+      const monthlyIncomeAverageAllAccounts = (totalIncomeAllAccounts / daysSinceFirstIncomeAllAccounts) * 30;
+      
+      // Annual income across all accounts is monthly * 12
+      annualIncome = monthlyIncomeAverageAllAccounts * 12;
+    }
+    
+    // For income transactions, calculate percentage as source income relative to total income across ALL accounts
+    // For expense transactions, calculate what percent of total income across ALL accounts is spent on this merchant
     let percentOfIncome = 0;
+    let percentOfAccountIncome = 0;
     
     if (isIncoming) {
-      // For income: Calculate what percent of total income comes from this source
+      // For income: Calculate what percent of TOTAL income (across all accounts) comes from this source
       const thisSourceAnnualIncome = annualPacing; // Annual pace of income from this source
       percentOfIncome = (thisSourceAnnualIncome / annualIncome) * 100;
+      
+      // Also calculate percentage of this account's income
+      percentOfAccountIncome = (thisSourceAnnualIncome / totalAccountAnnualIncome) * 100;
     } else {
-      // For expenses: Calculate what percent of annual income is spent here
+      // For expenses: Calculate what percent of annual income (across all accounts) is spent here
       percentOfIncome = (annualPacing / annualIncome) * 100;
+      
+      // Also calculate percentage of this account's income that is spent here
+      percentOfAccountIncome = (annualPacing / totalAccountAnnualIncome) * 100;
     }
 
     return {
@@ -463,9 +488,12 @@ Write in a natural, conversational tone that sounds like something a thoughtful 
       daysSinceFirst,
       isIncoming,
       annualPacing,
-      annualIncome,
+      annualIncome,          // Total income across all accounts
+      accountAnnualIncome: totalAccountAnnualIncome, // Income for just this account
       monthlyIncome: annualIncome / 12,
-      percentOfIncome,
+      accountMonthlyIncome: totalAccountAnnualIncome / 12,
+      percentOfIncome,       // Percentage of ALL income
+      percentOfAccountIncome, // Percentage of just this account's income
       incomeDetail,
       merchantRank,
       totalMerchants,
@@ -572,12 +600,12 @@ Write in a natural, conversational tone that sounds like something a thoughtful 
                     <div className="grid grid-cols-2 gap-3">
                       <div className="p-3 bg-blue-50 rounded-lg">
                         <p className="text-sm text-blue-700">Monthly Income</p>
-                        <p className="text-lg font-semibold text-blue-900">${(stats.annualIncome / 12).toFixed(2)}</p>
+                        <p className="text-lg font-semibold text-blue-900">${(stats.accountAnnualIncome / 12).toFixed(2)}</p>
                         <p className="text-xs text-gray-500">In this account</p>
                       </div>
                       <div className="p-3 bg-blue-50 rounded-lg">
                         <p className="text-sm text-blue-700">Annual Income</p>
-                        <p className="text-lg font-semibold text-blue-900">${stats.annualIncome.toFixed(2)}</p>
+                        <p className="text-lg font-semibold text-blue-900">${stats.accountAnnualIncome.toFixed(2)}</p>
                         <p className="text-xs text-gray-500">In this account</p>
                       </div>
                       <div className="p-3 bg-blue-50 rounded-lg">
@@ -601,13 +629,13 @@ Write in a natural, conversational tone that sounds like something a thoughtful 
                           <div 
                             className="absolute inset-0 rounded-full bg-green-500"
                             style={{ 
-                              background: `conic-gradient(#10b981 0% ${Math.min(stats.percentOfIncome, 100)}%, transparent ${Math.min(stats.percentOfIncome, 100)}% 100%)` 
+                              background: `conic-gradient(#10b981 0% ${Math.min(stats.percentOfAccountIncome, 100)}%, transparent ${Math.min(stats.percentOfAccountIncome, 100)}% 100%)` 
                             }}
                           ></div>
                           {/* Inner white circle to create donut effect */}
                           <div className="absolute inset-0 m-3 rounded-full bg-white flex items-center justify-center">
                             <div className="text-center">
-                              <span className="text-lg font-bold text-blue-900">{Math.min(stats.percentOfIncome, 100).toFixed(1)}%</span>
+                              <span className="text-lg font-bold text-blue-900">{Math.min(stats.percentOfAccountIncome, 100).toFixed(1)}%</span>
                               <p className="text-xs text-blue-700">of account's total income</p>
                             </div>
                           </div>
@@ -616,7 +644,9 @@ Write in a natural, conversational tone that sounds like something a thoughtful 
                     </div>
                     
                     <div className="mt-3 text-sm text-blue-700 bg-blue-100 p-3 rounded-lg">
-                      This source provides approximately ${(stats.annualPacing / 12).toFixed(2)} per month (${stats.annualPacing.toFixed(2)} annually) to this account, representing {stats.percentOfIncome > 100 ? '100+' : stats.percentOfIncome.toFixed(2)}% of the total income for this account.
+                      This source provides approximately ${(stats.annualPacing / 12).toFixed(2)} per month (${stats.annualPacing.toFixed(2)} annually) to this account, representing {stats.percentOfAccountIncome > 100 ? '100+' : stats.percentOfAccountIncome.toFixed(2)}% of the total income for this account.
+                      <br/><br/>
+                      <span className="font-semibold">Overall Impact:</span> This source represents {stats.percentOfIncome > 100 ? '100+' : stats.percentOfIncome.toFixed(2)}% of your total income across all accounts (${(stats.annualIncome / 12).toFixed(2)}/month).
                     </div>
                   </>
                 ) : (
@@ -644,13 +674,13 @@ Write in a natural, conversational tone that sounds like something a thoughtful 
                           <div 
                             className="absolute inset-0 rounded-full"
                             style={{ 
-                              background: `conic-gradient(#ef4444 0% ${Math.min(stats.percentOfIncome, 100)}%, transparent ${Math.min(stats.percentOfIncome, 100)}% 100%)` 
+                              background: `conic-gradient(#ef4444 0% ${Math.min(stats.percentOfAccountIncome, 100)}%, transparent ${Math.min(stats.percentOfAccountIncome, 100)}% 100%)` 
                             }}
                           ></div>
                           {/* Inner white circle to create donut effect */}
                           <div className="absolute inset-0 m-3 rounded-full bg-white flex items-center justify-center">
                             <div className="text-center">
-                              <span className="text-lg font-bold text-blue-900">{Math.min(stats.percentOfIncome, 100).toFixed(1)}%</span>
+                              <span className="text-lg font-bold text-blue-900">{Math.min(stats.percentOfAccountIncome, 100).toFixed(1)}%</span>
                               <p className="text-xs text-blue-700">of account's total income</p>
                             </div>
                           </div>
@@ -698,7 +728,9 @@ Write in a natural, conversational tone that sounds like something a thoughtful 
                     )}
                     
                     <div className="mt-3 text-sm text-blue-700 bg-blue-100 p-3 rounded-lg">
-                      If you continue this spending pattern in this account, you'll spend about ${(stats.annualPacing / 12).toFixed(2)} monthly (${stats.annualPacing.toFixed(2)} annually) at {transaction.merchant_name || transaction.name}, which is {stats.percentOfIncome > 100 ? '100+' : stats.percentOfIncome.toFixed(2)}% of this account's total income.
+                      If you continue this spending pattern in this account, you'll spend about ${(stats.annualPacing / 12).toFixed(2)} monthly (${stats.annualPacing.toFixed(2)} annually) at {transaction.merchant_name || transaction.name}, which is {stats.percentOfAccountIncome > 100 ? '100+' : stats.percentOfAccountIncome.toFixed(2)}% of this account's total income.
+                      <br/><br/>
+                      <span className="font-semibold">Overall Impact:</span> This spending represents {stats.percentOfIncome > 100 ? '100+' : stats.percentOfIncome.toFixed(2)}% of your total income across all accounts (${(stats.annualIncome / 12).toFixed(2)}/month).
                       {stats.hasCategory && stats.category && 
                         ` This transaction is in the "${stats.category.name}" category, which accounts for ${stats.category.count} transactions in your account history.`
                       }
