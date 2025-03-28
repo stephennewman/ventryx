@@ -127,31 +127,31 @@ const TransactionFeed: React.FC<TransactionFeedProps> = ({ transactions, selecte
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-4 mb-4">
+      <div className="flex flex-wrap items-center justify-between gap-6 mb-4">
         <input
           type="text"
           placeholder="Search transactions..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-        className="p-2 border border-purple-300 rounded bg-purple-50 text-purple-800 w-64"
+          className="p-2 border border-purple-300 rounded bg-purple-50 text-purple-800 flex-grow max-w-md"
         />
-        <div className="relative">
-          <select
-            id="sort"
-            value={sortOption}
-            onChange={handleSortChange}
-            className="appearance-none bg-purple-50 border border-purple-300 text-purple-800 rounded p-2 pr-8"
-          >
-            <option value="date-desc">Date (Newest to Oldest)</option>
-            <option value="date-asc">Date (Oldest to Newest)</option>
-            <option value="amount-desc">Amount (Highest to Lowest)</option>
-            <option value="amount-asc">Amount (Lowest to Highest)</option>
-          </select>
-          <div className="absolute right-2 top-1/2 transform -translate-y-1/2 text-purple-600 pointer-events-none">
-            <FaChevronDown />
+        <div className="flex items-center gap-4">
+          <div className="relative">
+            <select
+              id="sort"
+              value={sortOption}
+              onChange={handleSortChange}
+              className="appearance-none bg-purple-50 border border-purple-300 text-purple-800 rounded p-2 pr-8"
+            >
+              <option value="date-desc">Date (Newest to Oldest)</option>
+              <option value="date-asc">Date (Oldest to Newest)</option>
+              <option value="amount-desc">Amount (Highest to Lowest)</option>
+              <option value="amount-asc">Amount (Lowest to Highest)</option>
+            </select>
+            <div className="absolute right-2 top-1/2 transform -translate-y-1/2 text-purple-600 pointer-events-none">
+              <FaChevronDown />
+            </div>
           </div>
-        </div>
-        <div className="ml-auto">
           <DatePicker
             selectsRange={true}
             startDate={startDate}
