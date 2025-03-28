@@ -466,11 +466,28 @@ const App: React.FC = () => {
       });
 
       if (!exchangeResponse.ok) {
-        const errorData = await exchangeResponse.json();
-        throw new Error(errorData.details || 'Failed to exchange token');
+        // Safely attempt to parse error response, with fallback for empty responses
+        let errorMessage;
+        try {
+          const errorData = await exchangeResponse.json();
+          errorMessage = errorData.details || 'Failed to exchange token';
+        } catch (parseError) {
+          errorMessage = `Failed to exchange token: Server returned ${exchangeResponse.status} ${exchangeResponse.statusText}`;
+        }
+        throw new Error(errorMessage);
       }
 
-      const { accessToken } = await exchangeResponse.json();
+      // Safely parse response with error handling
+      let accessToken;
+      try {
+        const responseData = await exchangeResponse.json();
+        accessToken = responseData.accessToken;
+        if (!accessToken) {
+          throw new Error('Access token missing from response');
+        }
+      } catch (parseError) {
+        throw new Error('Could not parse server response: ' + (parseError instanceof Error ? parseError.message : String(parseError)));
+      }
       
       console.log('Fetching transactions...');
       const transactionsResponse = await fetch(`${API_URL}/transactions`, {
@@ -480,13 +497,32 @@ const App: React.FC = () => {
       });
 
       if (!transactionsResponse.ok) {
-        const errorData = await transactionsResponse.json();
-        throw new Error(errorData.details || 'Failed to fetch transactions');
+        // Safely attempt to parse error response, with fallback for empty responses
+        let errorMessage;
+        try {
+          const errorData = await transactionsResponse.json();
+          errorMessage = errorData.details || 'Failed to fetch transactions';
+        } catch (parseError) {
+          errorMessage = `Failed to fetch transactions: Server returned ${transactionsResponse.status} ${transactionsResponse.statusText}`;
+        }
+        throw new Error(errorMessage);
       }
 
-      const data = await transactionsResponse.json();
-      setTransactions(data.transactions);
-      setAccounts(data.accounts);
+      // Safely parse response with error handling
+      let transactions = [], accounts = [];
+      try {
+        const data = await transactionsResponse.json();
+        if (!data.transactions || !data.accounts) {
+          throw new Error('Invalid response format');
+        }
+        transactions = data.transactions;
+        accounts = data.accounts;
+      } catch (parseError) {
+        throw new Error('Could not parse transaction data: ' + (parseError instanceof Error ? parseError.message : String(parseError)));
+      }
+      
+      setTransactions(transactions);
+      setAccounts(accounts);
     } catch (err) {
       console.error('Error in Plaid flow:', err);
       setError(err instanceof Error ? err.message : 'Failed to connect bank account');
@@ -592,29 +628,22 @@ const App: React.FC = () => {
                 
                 {/* Account Data Tab Content */}
                 {activeTab === 'account' && (
-                  <>
-                    <div className="flex items-center justify-between mb-4">
-                      {(accounts?.length || 0) === 0 && (
-                        <button
-                          onClick={() => ready && open()}
-                          disabled={!ready || !linkToken || isLoading}
-                          className="font-semibold px-6 py-3 rounded-lg shadow text-white bg-gradient-to-r from-purple-500 via-pink-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 transition disabled:opacity-50 disabled:cursor-not-allowed ml-auto"
-                        >
-                          {isLoading ? 'Loading...' : 'Connect Your Bank Account'}
-                        </button>
-                      )}
-                    </div>
-
-                    {error && (
-                      <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4">
-                        <span className="block sm:inline">{error}</span>
-                      </div>
-                    )}
-
+                  <div className="py-6 min-h-[70vh]">
                     {isLoading ? (
                       <div className="text-center py-8">
                         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
                         <p className="mt-4 text-gray-600">Loading...</p>
+                      </div>
+                    ) : (accounts?.length || 0) === 0 ? (
+                      <div className="text-center py-8">
+                        <p className="text-gray-600">Connect an account to see your financial data.</p>
+                        <button
+                          onClick={() => ready && open()}
+                          disabled={!ready || !linkToken || isLoading}
+                          className="mt-4 font-semibold px-6 py-3 rounded-lg shadow text-white bg-gradient-to-r from-purple-500 via-pink-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          Connect Your Bank Account
+                        </button>
                       </div>
                     ) : (
                       <div className="flex space-x-6">
@@ -669,12 +698,18 @@ const App: React.FC = () => {
                         </div>
                       </div>
                     )}
-                  </>
+
+                    {error && (
+                      <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mt-4">
+                        <span className="block sm:inline">{error}</span>
+                      </div>
+                    )}
+                  </div>
                 )}
                 
                 {/* Budget Tab Content */}
                 {activeTab === 'budget' && (
-                  <div className="py-4">
+                  <div className="py-6 min-h-[70vh]">
                     {isLoading ? (
                       <div className="text-center py-8">
                         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
