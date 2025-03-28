@@ -683,24 +683,14 @@ Write in a natural, conversational tone that sounds like something a thoughtful 
                   <>
                     <div className="grid grid-cols-2 gap-3">
                       <div className="p-3 bg-blue-50 rounded-lg">
-                        <p className="text-sm text-blue-700">Monthly Income</p>
-                        <p className="text-lg font-semibold text-blue-900">${(stats.accountAnnualIncome / 12).toFixed(2)}</p>
-                        <p className="text-xs text-gray-500">In this account</p>
-                      </div>
-                      <div className="p-3 bg-blue-50 rounded-lg">
-                        <p className="text-sm text-blue-700">Annual Income</p>
-                        <p className="text-lg font-semibold text-blue-900">${stats.accountAnnualIncome.toFixed(2)}</p>
-                        <p className="text-xs text-gray-500">In this account</p>
-                      </div>
-                      <div className="p-3 bg-blue-50 rounded-lg">
                         <p className="text-sm text-blue-700">This Source Monthly</p>
                         <p className="text-lg font-semibold text-blue-900">${(stats.annualAverage / 12).toFixed(2)}</p>
-                        <p className="text-xs text-gray-500">For this account</p>
+                        <p className="text-xs text-gray-500">From {transaction.merchant_name || transaction.name}</p>
                       </div>
                       <div className="p-3 bg-blue-50 rounded-lg">
                         <p className="text-sm text-blue-700">This Source Annually</p>
                         <p className="text-lg font-semibold text-blue-900">${stats.annualAverage.toFixed(2)}</p>
-                        <p className="text-xs text-gray-500">For this account</p>
+                        <p className="text-xs text-gray-500">From {transaction.merchant_name || transaction.name}</p>
                       </div>
                     </div>
                     
