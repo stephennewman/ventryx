@@ -836,12 +836,12 @@ Requirements:
               </div>
             )}
 
-            {/* Monthly Category Budget Tracker */}
+            {/* Budget Analysis */}
             {stats && !stats.isIncoming && stats.hasCategory && stats.category && (
               <div className="bg-white rounded-xl p-4 border-2 border-teal-200 shadow-sm mt-4">
                 <div className="flex items-center mb-3">
                   <span className="mr-2 text-lg">📅</span>
-                  <span className="font-semibold text-base text-gray-800">Monthly Category Budget Tracker</span>
+                  <span className="font-semibold text-base text-gray-800">Budget Analysis</span>
                 </div>
                 
                 {/* Calculate month-to-date spending for this category */}
