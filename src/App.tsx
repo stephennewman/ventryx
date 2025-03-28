@@ -147,17 +147,18 @@ const App: React.FC = () => {
       // Skip transfers between accounts which shouldn't be part of budget
       if (t.category && t.category.includes('Transfer')) return;
       
-      const category = t.category && t.category.length > 0 ? t.category[0] : 'Uncategorized';
-      // Add a prefix for payment categories to distinguish them
-      const categoryKey = t.amount < 0 ? `Income: ${category}` : category;
+      // Skip income transactions (negative amounts)
+      if (t.amount < 0) return;
       
-      if (!categories.has(categoryKey)) {
-        categories.set(categoryKey, { total: 0, transactions: [] });
+      const category = t.category && t.category.length > 0 ? t.category[0] : 'Uncategorized';
+      
+      if (!categories.has(category)) {
+        categories.set(category, { total: 0, transactions: [] });
       }
-      const categoryData = categories.get(categoryKey) as CategoryData;
+      const categoryData = categories.get(category) as CategoryData;
       categoryData.total += Math.abs(t.amount); // Use absolute value
       categoryData.transactions.push(t);
-      categories.set(categoryKey, categoryData);
+      categories.set(category, categoryData);
     });
     
     // Convert to array and sort by total amount
@@ -809,22 +810,18 @@ const App: React.FC = () => {
                                     // Color array for consistency with pie chart
                                     const colors = ['bg-purple-500', 'bg-pink-500', 'bg-cyan-500', 'bg-purple-400', 'bg-blue-500'];
                                     const colorClass = colors[index % colors.length];
-                                    // Use a different color for income categories
-                                    const isIncome = category.name.startsWith('Income:');
-                                    const displayName = isIncome ? category.name.substring(8) : category.name;
-                                    const finalColorClass = isIncome ? 'bg-green-500' : colorClass;
                                     
                                     return (
                                       <div className="flex items-center" key={category.name}>
-                                        <div className={`w-3 h-3 rounded-full ${finalColorClass} mr-2`}></div>
+                                        <div className={`w-3 h-3 rounded-full ${colorClass} mr-2`}></div>
                                         <div className="flex-1">
                                           <div className="flex justify-between">
-                                            <span className="text-sm font-medium">{displayName}{isIncome ? ' (Income)' : ''}</span>
+                                            <span className="text-sm font-medium">{category.name}</span>
                                             <span className="text-sm font-medium">${category.currentMonthSpent.toFixed(2)}</span>
                                           </div>
                                           <div className="w-full bg-gray-100 rounded-full h-1.5 mt-1">
                                             <div 
-                                              className={finalColorClass + " h-1.5 rounded-full"} 
+                                              className={colorClass + " h-1.5 rounded-full"} 
                                               style={{ width: `${Math.min(100, Math.abs(category.percentage))}%` }}
                                             ></div>
                                           </div>
