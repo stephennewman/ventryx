@@ -11,6 +11,7 @@ import PostSSOWelcome from './components/PostSSOWelcome';
 import PrivacyPolicy from './components/PrivacyPolicy';
 import TermsOfService from './components/TermsOfService';
 import { scrollToTop } from './utils/scrollManager';
+import { getApiUrl, logApiConfig } from './utils/apiConfig';
 
 interface PlaidEvent {
   eventName: string;
@@ -27,8 +28,6 @@ interface PlaidEvent {
     [key: string]: string | undefined;
   };
 }
-
-const API_URL = `${import.meta.env.VITE_API_URL}/api` || 'http://localhost:5176/api';
 
 // Add this before the App component declaration
 window.clearAccountFilter = () => {
@@ -396,7 +395,7 @@ const App: React.FC = () => {
       try {
         setIsLoading(true);
         setError(null);
-        const response = await fetch(`${API_URL}/create-link-token`, {
+        const response = await fetch(getApiUrl('create-link-token'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ userId: user.uid }),
@@ -419,10 +418,21 @@ const App: React.FC = () => {
     if (!user) return;
 
     try {
-      const response = await fetch(`${API_URL}/transactions`, {
+      // In development, try to get stored token from localStorage
+      let payload: { userId: string; accessToken?: string } = { userId: user.uid };
+      
+      if (process.env.NODE_ENV !== 'production') {
+        const storedToken = localStorage.getItem(`plaid_access_token_${user.uid}`);
+        if (storedToken) {
+          console.log('Using stored access token from localStorage');
+          payload.accessToken = storedToken;
+        }
+      }
+      
+      const response = await fetch(getApiUrl('transactions'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user.uid }),
+        body: JSON.stringify(payload),
       });
 
       const data = await response.json();
@@ -459,7 +469,7 @@ const App: React.FC = () => {
       setError(null);
       
       console.log('Exchanging public token...', public_token);
-      const exchangeResponse = await fetch(`${API_URL}/exchange-token`, {
+      const exchangeResponse = await fetch(getApiUrl('exchange-token'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ publicToken: public_token, userId: user.uid }),
@@ -485,15 +495,24 @@ const App: React.FC = () => {
         throw new Error('Could not parse server response: ' + (parseError instanceof Error ? parseError.message : String(parseError)));
       }
       
-      console.log('Fetching transactions...');
+      console.log('Fetching transactions...', responseData);
       // In production, we don't send the accessToken since the server will fetch it from Firestore
       // In development, we include it if it was returned from the server
       const transactionPayload: { userId: string; accessToken?: string } = { userId: user.uid };
-      if (responseData.accessToken) {
-        transactionPayload.accessToken = responseData.accessToken;
+      
+      // Check for token in both possible property names (with and without underscore)
+      const token = responseData.accessToken || responseData.access_token;
+      if (token) {
+        // Store token in localStorage for development persistence
+        if (process.env.NODE_ENV !== 'production') {
+          console.log('Storing access token in localStorage for development');
+          localStorage.setItem(`plaid_access_token_${user.uid}`, token);
+        }
+        
+        transactionPayload.accessToken = token;
       }
       
-      const transactionsResponse = await fetch(`${API_URL}/transactions`, {
+      const transactionsResponse = await fetch(getApiUrl('transactions'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(transactionPayload),
