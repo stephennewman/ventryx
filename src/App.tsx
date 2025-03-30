@@ -481,7 +481,7 @@ const App: React.FC = () => {
       let accessToken;
       try {
         const responseData = await exchangeResponse.json();
-        accessToken = responseData.access_token;
+        accessToken = responseData.accessToken;
         if (!accessToken) {
           throw new Error('Access token missing from response');
         }
