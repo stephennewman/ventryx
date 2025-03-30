@@ -250,7 +250,6 @@ app.post('/exchange-token', async (req, res) => {
 
   console.log('Exchanging public token for access token...');
   try {
-    // Use fetch instead of the Plaid SDK
     const response = await fetch('https://sandbox.plaid.com/item/public_token/exchange', {
       method: 'POST',
       headers: {
@@ -260,9 +259,11 @@ app.post('/exchange-token', async (req, res) => {
       },
       body: JSON.stringify({ public_token: publicToken })
     });
-    
+
     const data = await response.json();
-    
+    console.log('Plaid exchange response:', data); // helpful for debugging
+
+    // Store the access token in Firestore
     try {
       const userRef = db.collection('users').doc(userId);
       await userRef.set({ plaidAccessToken: data.access_token }, { merge: true });
@@ -270,11 +271,11 @@ app.post('/exchange-token', async (req, res) => {
       console.warn('Failed to store access token in Firestore:', dbError);
     }
 
-    const responseData = { success: true };
-    if (process.env.NODE_ENV !== 'production') {
-      responseData.accessToken = data.access_token;
-    }
-    res.json(responseData);
+    // ✅ Always return the access_token
+    res.json({
+      success: true,
+      access_token: data.access_token
+    });
   } catch (error) {
     console.error('Plaid exchange-token error:', error);
     res.status(500).json({ 
@@ -284,6 +285,7 @@ app.post('/exchange-token', async (req, res) => {
     });
   }
 });
+
 app.post('/api/exchange-token', async (req, res) => {
   // Duplicate of /exchange-token endpoint for /api prefix
   const { publicToken, userId } = req.body;
@@ -291,7 +293,6 @@ app.post('/api/exchange-token', async (req, res) => {
 
   console.log('Exchanging public token for access token...');
   try {
-    // Use fetch instead of the Plaid SDK
     const response = await fetch('https://sandbox.plaid.com/item/public_token/exchange', {
       method: 'POST',
       headers: {
@@ -301,9 +302,10 @@ app.post('/api/exchange-token', async (req, res) => {
       },
       body: JSON.stringify({ public_token: publicToken })
     });
-    
+
     const data = await response.json();
-    
+    console.log('Plaid exchange response:', data);
+
     try {
       const userRef = db.collection('users').doc(userId);
       await userRef.set({ plaidAccessToken: data.access_token }, { merge: true });
@@ -311,11 +313,10 @@ app.post('/api/exchange-token', async (req, res) => {
       console.warn('Failed to store access token in Firestore:', dbError);
     }
 
-    const responseData = { success: true };
-    if (process.env.NODE_ENV !== 'production') {
-      responseData.accessToken = data.access_token;
-    }
-    res.json(responseData);
+    res.json({
+      success: true,
+      access_token: data.access_token
+    });
   } catch (error) {
     console.error('Plaid exchange-token error:', error);
     res.status(500).json({ 
