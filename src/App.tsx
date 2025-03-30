@@ -477,23 +477,26 @@ const App: React.FC = () => {
         throw new Error(errorMessage);
       }
 
-      // Safely parse response with error handling
-      let accessToken;
+      // Combine both approaches - safely parse response with error handling
+      let responseData;
       try {
-        const responseData = await exchangeResponse.json();
-        accessToken = responseData.accessToken;
-        if (!accessToken) {
-          throw new Error('Access token missing from response');
-        }
+        responseData = await exchangeResponse.json();
       } catch (parseError) {
         throw new Error('Could not parse server response: ' + (parseError instanceof Error ? parseError.message : String(parseError)));
       }
       
       console.log('Fetching transactions...');
+      // In production, we don't send the accessToken since the server will fetch it from Firestore
+      // In development, we include it if it was returned from the server
+      const transactionPayload: { userId: string; accessToken?: string } = { userId: user.uid };
+      if (responseData.accessToken) {
+        transactionPayload.accessToken = responseData.accessToken;
+      }
+      
       const transactionsResponse = await fetch(`${API_URL}/transactions`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user.uid, accessToken }),
+        body: JSON.stringify(transactionPayload),
       });
 
       if (!transactionsResponse.ok) {
