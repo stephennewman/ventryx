@@ -4,34 +4,41 @@ const path = require('path');
 const { Configuration, PlaidApi, PlaidEnvironments } = require('plaid');
 const { OpenAI } = require('openai');
 const admin = require('firebase-admin');
+const dotenv = require('dotenv');
 
-// Load environment variables based on NODE_ENV
-if (!process.env.PLAID_CLIENT_ID) {  // Only load if not already loaded by functions
+// Improved environment variable loading
+if (!process.env.FUNCTION_TARGET) {  // Skip if running as a Firebase function
+  // Set default NODE_ENV if not set
   process.env.NODE_ENV = process.env.NODE_ENV || 'development';
+  
+  // Select the correct .env file based on environment
   const envFile = process.env.NODE_ENV === 'production' ? '.env.production' : '.env.development';
   
-  // Try different paths for the env file
-  const possiblePaths = [
-    path.resolve(__dirname, '..', '..', envFile),  // From functions/server/server.js to root
-    path.resolve(__dirname, '..', envFile),        // From functions/server/server.js to functions
-    path.resolve(__dirname, envFile),              // In the same directory
-  ];
-
-  let envLoaded = false;
-  for (const envPath of possiblePaths) {
-    try {
-      require('dotenv').config({ path: envPath });
-      console.log(`Loaded environment from: ${envPath}`);
-      envLoaded = true;
-      break;
-    } catch (e) {
-      console.log(`Could not load environment from: ${envPath}`);
-    }
+  // Simple path resolution directly to the root directory (two levels up from functions/server)
+  const envPath = path.resolve(__dirname, '../../', envFile);
+  
+  console.log(`Loading environment from: ${envPath}`);
+  const result = dotenv.config({ path: envPath });
+  
+  if (result.error) {
+    console.warn(`Failed to load ${envFile}: ${result.error.message}`);
+    // Try .env as fallback
+    const fallbackPath = path.resolve(__dirname, '../../.env');
+    console.log(`Trying fallback .env at: ${fallbackPath}`);
+    dotenv.config({ path: fallbackPath });
+  } else {
+    console.log('Environment variables loaded successfully');
   }
-
-  if (!envLoaded) {
-    console.warn('Could not load environment file from any location');
-  }
+  
+  // Add debug logging for important environment variables
+  console.log('Environment:', {
+    NODE_ENV: process.env.NODE_ENV,
+    VITE_API_URL: process.env.VITE_API_URL,
+    PORT: process.env.PORT,
+    hasPlaidClientId: !!process.env.PLAID_CLIENT_ID,
+    hasPlaidSecret: !!process.env.PLAID_SECRET,
+    hasOpenAIKey: !!process.env.OPENAI_API_KEY
+  });
 }
 
 // Initialize Firebase Admin
@@ -636,6 +643,23 @@ app.post('/api/debug-plaid', async (req, res) => {
     console.error('Direct Plaid API call error:', error);
     res.status(500).json({ error: 'Failed to make direct Plaid API call', details: error.message });
   }
+});
+
+// Add request logging middleware
+app.use((req, res, next) => {
+  // Log all requests with method, path, and basic details
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
+  
+  // For token-related requests, log additional information to help debug
+  if (req.path.includes('token') || req.path.includes('transaction')) {
+    console.log('Request details:', {
+      hasUserId: !!req.body.userId,
+      hasAccessToken: !!req.body.accessToken,
+      hasPublicToken: !!req.body.publicToken
+    });
+  }
+  
+  next();
 });
 
 // Error handling middleware

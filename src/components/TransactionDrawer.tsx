@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Transaction } from '../plaid';
 import ReactMarkdown from 'react-markdown';
-
-const API_URL = `${import.meta.env.VITE_API_URL}/api` || 'http://localhost:5176/api';
+import { getApiUrl } from '../utils/apiConfig';
 
 interface TransactionDrawerProps {
   transaction: Transaction | null;
@@ -89,7 +88,7 @@ Requirements:
         content: prompt
       }];
 
-      const response = await fetch(`${API_URL}/openai/chat-with-transactions`, {
+      const response = await fetch(getApiUrl('openai/chat-with-transactions'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -144,7 +143,7 @@ Requirements:
         content: prompt
       }];
 
-      const response = await fetch(`${API_URL}/openai/chat-with-transactions`, {
+      const response = await fetch(getApiUrl('openai/chat-with-transactions'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ messages, transactions: [] }),
@@ -198,7 +197,7 @@ Requirements:
         content: prompt
       }];
 
-      const response = await fetch(`${API_URL}/openai/chat-with-transactions`, {
+      const response = await fetch(getApiUrl('openai/chat-with-transactions'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ messages, transactions: [] }),
