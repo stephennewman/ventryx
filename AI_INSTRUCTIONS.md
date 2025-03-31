@@ -1,6 +1,50 @@
 # AI Development Instructions
 
-This document outlines design and development preferences for the Ventryx project. AI assistants and developers should follow these guidelines to maintain consistency.
+## Project Overview
+
+### Application Structure
+- **Name:** Ventryx
+- **Type:** React/TypeScript web application
+- **Build System:** Vite
+- **Styling:** TailwindCSS
+- **Deployment:** Netlify (frontend), Firebase (functions)
+
+### Key Technologies
+- **Frontend Framework:** React 18 with TypeScript
+- **Backend:** Firebase and Node.js server
+- **Authentication:** Firebase Auth
+- **Database:** Firebase (Firestore likely)
+- **APIs Integration:** 
+  - Plaid (financial data)
+  - OpenAI (AI functionality)
+  - Resend (email services)
+- **State Management:** React hooks
+- **Testing:** Jest with React Testing Library
+
+### Main Features
+- Transaction management (TransactionFeed.tsx, TransactionDrawer.tsx)
+- Meal planning system (MealsTab.tsx, functions/meals)
+- Chat functionality (ChatDrawer.tsx)
+- User onboarding (PostSSOWelcome.tsx)
+- Legal documents (TermsOfService.tsx, PrivacyPolicy.tsx)
+
+### Project Architecture
+- `/src` - Frontend React application
+  - `/components` - UI components
+  - `/utils` - Helper functions and API configuration
+  - `/config` - Application configuration
+- `/functions` - Serverless Firebase functions
+  - `/meals` - Meal planning functionality
+  - `/server` - Server-side code
+    - **`server.js`** - Main backend file containing core server functionality
+- `/server` - Node.js server (additional backend services)
+- `/public` - Static assets
+
+### Development Workflow
+- Run `npm run dev` to start both frontend and backend servers concurrently
+- Frontend runs on port 5173
+- Tests can be run with `npm test`
+- Deployment combines both Firebase functions and Netlify frontend
 
 ## UI/UX Design Preferences
 
@@ -101,5 +145,13 @@ This document outlines design and development preferences for the Ventryx projec
    - Maintain proper contrast ratios
    - Ensure keyboard navigation support
    - Use semantic HTML elements appropriately
+
+4. **Codebase Analysis**
+   - Conduct a comprehensive analysis of the codebase before starting new functionality
+   - Review existing components and patterns to ensure consistency
+   - Identify reusable code to prevent duplication
+   - Understand data flow and state management approaches in place
+   - Evaluate integration points with existing systems
+   - Document dependencies and affected components before implementation
 
 This document should be updated as project preferences evolve. 
