@@ -5,6 +5,7 @@ const { Configuration, PlaidApi, PlaidEnvironments } = require('plaid');
 const { OpenAI } = require('openai');
 const admin = require('firebase-admin');
 const dotenv = require('dotenv');
+const functions = require('firebase-functions');
 
 // Improved environment variable loading
 if (!process.env.FUNCTION_TARGET) {  // Skip if running as a Firebase function
@@ -129,26 +130,39 @@ console.log('Plaid Secret:', process.env.PLAID_SECRET ? 'Present' : 'Missing');
 console.log('OpenAI API Key:', process.env.OPENAI_API_KEY ? 'Present' : 'Missing');
 
 // Get environment variables for credentials, prioritizing Firebase environment variables
-// FALLBACK VALUES FOR PRODUCTION - Replace with environment variables in Cloud Console!
-let plaidClientId = process.env.PLAID_CLIENT_ID || '67cc77c4a291e80023d19b3c';
-let plaidSecret = process.env.PLAID_SECRET || '6b44b731a9bc537a36befba5fcbe77';
-let openaiApiKey = process.env.OPENAI_API_KEY;
+// Determine the correct source for credentials
+let plaidClientId, plaidSecret, openaiApiKey;
 
-// If running in Firebase Functions environment, it should already have these environment variables
-// set from the Firebase console or deployment config
 if (process.env.FUNCTION_TARGET) {
-  console.log('Running in Firebase Functions environment, using environment variables directly');
-  // Firebase Functions v2 uses environment variables directly
-  console.log('Environment variables in Firebase Functions:', {
-    hasPlaidId: !!process.env.PLAID_CLIENT_ID,
-    hasPlaidSecret: !!process.env.PLAID_SECRET,
-    hasOpenAIKey: !!process.env.OPENAI_API_KEY
-  });
+  // Running in Firebase Functions environment
+  try {
+    plaidClientId = functions.config().plaid?.client_id;
+    plaidSecret = functions.config().plaid?.secret;
+    openaiApiKey = functions.config().openai?.api_key;
+    console.log('Using Plaid credentials from Firebase Functions config');
+  } catch (err) {
+    console.error('Error loading Firebase functions config:', err);
+  }
+} else {
+  // Local development
+  plaidClientId = process.env.PLAID_CLIENT_ID;
+  plaidSecret = process.env.PLAID_SECRET;
+  openaiApiKey = process.env.OPENAI_API_KEY;
+  console.log('Using Plaid credentials from environment variables');
 }
+
+// Verify we have the required credentials
+if (!plaidClientId || !plaidSecret) {
+  console.error('[CRITICAL] Missing Plaid credentials - Plaid functionality will not work properly');
+}
+
+// Determine environment for Plaid API
+const plaidEnv = process.env.NODE_ENV === 'production' ? 'production' : 'sandbox';
+const plaidBaseUrl = `https://${plaidEnv}.plaid.com`;
 
 // Plaid client setup with environment-specific configuration
 const configuration = new Configuration({
-  basePath: PlaidEnvironments.sandbox, // Always use sandbox for testing
+  basePath: PlaidEnvironments[plaidEnv],
   baseOptions: {
     headers: {
       'PLAID-CLIENT-ID': plaidClientId,
@@ -162,7 +176,8 @@ const configuration = new Configuration({
 console.log('Plaid API Headers:', {
   'PLAID-CLIENT-ID': plaidClientId ? plaidClientId.substring(0, 5) + '...' : 'Not Set',
   'PLAID-SECRET': plaidSecret ? plaidSecret.substring(0, 5) + '...' : 'Not Set',
-  basePath: PlaidEnvironments.sandbox
+  'environment': plaidEnv,
+  'basePath': PlaidEnvironments[plaidEnv]
 });
 
 const plaidClient = new PlaidApi(configuration);
@@ -197,7 +212,7 @@ app.post('/create-link-token', async (req, res) => {
     }
 
     // Use fetch instead of the Plaid SDK
-    const response = await fetch('https://sandbox.plaid.com/link/token/create', {
+    const response = await fetch(`${plaidBaseUrl}/link/token/create`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -233,7 +248,7 @@ app.post('/api/create-link-token', async (req, res) => {
     }
 
     // Use fetch instead of the Plaid SDK
-    const response = await fetch('https://sandbox.plaid.com/link/token/create', {
+    const response = await fetch(`${plaidBaseUrl}/link/token/create`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -257,7 +272,7 @@ app.post('/exchange-token', async (req, res) => {
 
   console.log('Exchanging public token for access token...');
   try {
-    const response = await fetch('https://sandbox.plaid.com/item/public_token/exchange', {
+    const response = await fetch(`${plaidBaseUrl}/item/public_token/exchange`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -300,7 +315,7 @@ app.post('/api/exchange-token', async (req, res) => {
 
   console.log('Exchanging public token for access token...');
   try {
-    const response = await fetch('https://sandbox.plaid.com/item/public_token/exchange', {
+    const response = await fetch(`${plaidBaseUrl}/item/public_token/exchange`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -363,7 +378,7 @@ app.post('/transactions', async (req, res) => {
     const start_date = '2024-01-01';
     const end_date = today.toISOString().split('T')[0];
     
-    const response = await fetch('https://sandbox.plaid.com/transactions/get', {
+    const response = await fetch(`${plaidBaseUrl}/transactions/get`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -424,7 +439,7 @@ app.post('/api/transactions', async (req, res) => {
     const start_date = '2024-01-01';
     const end_date = today.toISOString().split('T')[0];
     
-    const response = await fetch('https://sandbox.plaid.com/transactions/get', {
+    const response = await fetch(`${plaidBaseUrl}/transactions/get`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -590,7 +605,7 @@ app.post('/debug-plaid', async (req, res) => {
 
   try {
     console.log('Attempting direct Plaid API call with fetch');
-    const response = await fetch('https://sandbox.plaid.com/link/token/create', {
+    const response = await fetch(`${plaidBaseUrl}/link/token/create`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -621,7 +636,7 @@ app.post('/api/debug-plaid', async (req, res) => {
 
   try {
     console.log('Attempting direct Plaid API call with fetch');
-    const response = await fetch('https://sandbox.plaid.com/link/token/create', {
+    const response = await fetch(`${plaidBaseUrl}/link/token/create`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

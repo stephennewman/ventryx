@@ -12,6 +12,7 @@ import PrivacyPolicy from './components/PrivacyPolicy';
 import TermsOfService from './components/TermsOfService';
 import { scrollToTop } from './utils/scrollManager';
 import { getApiUrl, logApiConfig } from './utils/apiConfig';
+import { getPlaidConfig } from './config/plaid';
 
 interface PlaidEvent {
   eventName: string;
@@ -94,6 +95,8 @@ const App: React.FC = () => {
   const [selectedMonth, setSelectedMonth] = useState<number>(currentDate.getMonth());
   const [selectedYear, setSelectedYear] = useState<number>(currentDate.getFullYear());
 
+  const plaidConfig = getPlaidConfig();
+  
   // Add helper functions for budget calculations
   const calculateMonthlyMetrics = (): MonthlyMetrics | null => {
     if (!transactions.length) return null;
@@ -458,7 +461,7 @@ const App: React.FC = () => {
     },
     language: 'en',
     countryCodes: ['US'],
-    env: 'sandbox',
+    env: import.meta.env.VITE_PLAID_ENV || 'sandbox',
   });
 
   const handlePlaidSuccess = async (public_token: string) => {

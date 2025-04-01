@@ -1,4 +1,5 @@
 import { Configuration, PlaidApi, PlaidEnvironments } from 'plaid';
+import { getPlaidConfig } from './config/plaid';
 
 export interface Account {
   account_id: string;
@@ -32,8 +33,11 @@ export interface Transaction {
   payment_channel?: string;
 }
 
+// Create the configuration for the Plaid client
+const plaidConfig = getPlaidConfig();
+
 const configuration = new Configuration({
-  basePath: PlaidEnvironments.sandbox,
+  basePath: plaidConfig.basePath,
   baseOptions: {
     headers: {
       'PLAID-CLIENT-ID': import.meta.env.VITE_PLAID_CLIENT_ID,
