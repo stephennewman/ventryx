@@ -131,7 +131,7 @@ console.log('OpenAI API Key:', process.env.OPENAI_API_KEY ? 'Present' : 'Missing
 // Get environment variables for credentials, prioritizing Firebase environment variables
 // FALLBACK VALUES FOR PRODUCTION - Replace with environment variables in Cloud Console!
 let plaidClientId = process.env.PLAID_CLIENT_ID || '67cc77c4a291e80023d19b3c';
-let plaidSecret = process.env.PLAID_SECRET || '6b44b731a9bc537a36befba5fcbe77';
+let plaidSecret = process.env.PLAID_SECRET || '52021cac3c02ac3ce0c00588b70cb9';
 let openaiApiKey = process.env.OPENAI_API_KEY;
 
 // If running in Firebase Functions environment, it should already have these environment variables
