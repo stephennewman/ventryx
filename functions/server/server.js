@@ -129,7 +129,6 @@ console.log('Plaid Client ID:', process.env.PLAID_CLIENT_ID ? 'Present' : 'Missi
 console.log('Plaid Secret:', process.env.PLAID_SECRET ? 'Present' : 'Missing');
 console.log('OpenAI API Key:', process.env.OPENAI_API_KEY ? 'Present' : 'Missing');
 
-// Get environment variables for credentials, prioritizing Firebase environment variables
 // Determine the correct source for credentials
 let plaidClientId, plaidSecret, openaiApiKey;
 
