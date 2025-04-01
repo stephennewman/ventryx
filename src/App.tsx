@@ -398,16 +398,21 @@ const App: React.FC = () => {
       try {
         setIsLoading(true);
         setError(null);
-        const response = await fetch(getApiUrl('create-link-token'), {
+        const url = getApiUrl('create-link-token');
+        console.log("🔁 Fetching:", url);
+        
+        const response = await fetch(url, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ userId: user.uid }),
         });
 
         const data = await response.json();
+        console.log("✅ Response:", data);
         setLinkToken(data.link_token);
+        window.token = data.link_token; // Store token in window for debugging
       } catch (err) {
-        console.error('Error creating link token:', err);
+        console.error("❌ Link token fetch failed", err);
         setError(err instanceof Error ? err.message : 'Failed to create link token');
       } finally {
         setIsLoading(false);
@@ -1566,6 +1571,7 @@ const App: React.FC = () => {
 declare global {
   interface Window {
     clearAccountFilter: () => void;
+    token: string; // Add this line
   }
 }
 

@@ -8,6 +8,9 @@
 // Base URL from environment or fallback to localhost
 export const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5176';
 
+// Add debug logging for environment variable
+console.log("VITE_API_URL:", import.meta.env.VITE_API_URL);
+
 /**
  * Gets the correct API URL for the current environment
  * 
@@ -29,7 +32,9 @@ export function getApiUrl(endpoint: string): string {
   // Clean the endpoint (remove leading slash if needed)
   const cleanEndpoint = endpoint.startsWith('/') ? endpoint.slice(1) : endpoint;
   
-  return `${BASE_URL}${apiPrefix}/${cleanEndpoint}`;
+  const fullUrl = `${BASE_URL}${apiPrefix}/${cleanEndpoint}`;
+  console.log(`🔗 API URL for ${endpoint}:`, fullUrl);
+  return fullUrl;
 }
 
 /**
