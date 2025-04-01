@@ -14,7 +14,7 @@ console.log('Starting Firebase Function...');
 console.log('Node.js Version:', process.version);
 console.log('Environment:', process.env.NODE_ENV || 'development');
 
-// Export the API using Functions v2
+// Export the API using Functions v2 with additional configuration
 export const api = onRequest({
   region: 'us-central1',
   memory: '512MiB',

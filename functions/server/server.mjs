@@ -11,17 +11,35 @@ import { dirname } from 'path';
 import dotenv from 'dotenv';
 import admin from 'firebase-admin';
 import { defineString } from 'firebase-functions/params';
+import { getFunctions } from 'firebase-admin/functions';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
+// Define parameters for Firebase Functions v2
+export const plaidClientIdParam = defineString('PLAID_CLIENT_ID');
+export const plaidSecretParam = defineString('PLAID_SECRET');
+export const plaidEnvParam = defineString('PLAID_ENV', { default: 'sandbox' });
+export const openaiApiKeyParam = defineString('OPENAI_API_KEY');
+
 // Check if we're running in Firebase Functions
 const isFirebaseFunctions = !!(process.env.FUNCTION_NAME || process.env.FIREBASE_CONFIG || process.env.GCLOUD_PROJECT);
 
-// Initialize environment variables in development
-if (process.env.NODE_ENV !== 'production') {
+// Set environment
+process.env.NODE_ENV = isFirebaseFunctions ? 'production' : 'development';
+
+// Only load local .env file if running in local development
+if (process.env.LOCAL_DEV === 'true') {
   dotenv.config();
 }
+
+// Log environment info
+console.log('Environment Info:', {
+  nodeEnv: process.env.NODE_ENV,
+  isFirebaseFunctions,
+  hasFirebaseConfig: !!process.env.FIREBASE_CONFIG,
+  isLocalDev: process.env.LOCAL_DEV === 'true'
+});
 
 // Initialize Firebase Admin if not already initialized
 if (!admin.apps.length) {
@@ -35,28 +53,6 @@ if (!admin.apps.length) {
 
 // Set up Firestore database reference
 const db = getFirestore();
-
-// Define configuration parameters
-let plaidClientId, plaidSecret, plaidEnv, openaiApiKey;
-
-const isFirebase = !!(process.env.FUNCTION_NAME || process.env.FIREBASE_CONFIG || process.env.GCLOUD_PROJECT);
-
-if (isFirebase) {
-  // Firebase Functions Params
-  const { defineString } = await import('firebase-functions/params');
-  plaidClientId = defineString('PLAID_CLIENT_ID').value();
-  plaidSecret = defineString('PLAID_SECRET').value();
-  plaidEnv = defineString('PLAID_ENV', { default: 'sandbox' }).value();
-  openaiApiKey = defineString('OPENAI_API_KEY').value();
-} else {
-  // Non-Firebase environments (Netlify/local dev)
-  dotenv.config();
-  plaidClientId = process.env.PLAID_CLIENT_ID || process.env.VITE_PLAID_CLIENT_ID;
-  plaidSecret = process.env.PLAID_SECRET || process.env.VITE_PLAID_SECRET;
-  plaidEnv = process.env.PLAID_ENV || process.env.VITE_PLAID_ENV || 'sandbox';
-  openaiApiKey = process.env.OPENAI_API_KEY;
-}
-
 
 // Create the Express app instance
 const app = express();
@@ -95,29 +91,52 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Plaid client setup
-const configuration = new Configuration({
-  basePath: PlaidEnvironments[plaidEnv],
-  baseOptions: {
-    headers: {
-      'PLAID-CLIENT-ID': plaidClientId,
-      'PLAID-SECRET': plaidSecret,
-      'Content-Type': 'application/json',
+// Function to get configuration values
+const getConfig = () => {
+  // Log environment info (without sensitive values)
+  console.log('Environment Variables:', {
+    NODE_ENV: process.env.NODE_ENV,
+    PLAID_ENV: process.env.PLAID_ENV || 'production',
+    hasPlaidConfig: true,
+    hasOpenAIKey: true
+  });
+
+  // Return configuration values
+  return {
+    plaidClientId: process.env.PLAID_CLIENT_ID,
+    plaidSecret: process.env.PLAID_SECRET,
+    plaidEnv: process.env.PLAID_ENV || 'production',
+    openaiApiKey: process.env.OPENAI_API_KEY
+  };
+};
+
+// Initialize clients in request handlers to ensure parameters are available
+app.use((req, res, next) => {
+  const config = getConfig();
+  
+  // Plaid client setup
+  const configuration = new Configuration({
+    basePath: PlaidEnvironments[config.plaidEnv],
+    baseOptions: {
+      headers: {
+        'PLAID-CLIENT-ID': config.plaidClientId,
+        'PLAID-SECRET': config.plaidSecret,
+        'Content-Type': 'application/json',
+      },
     },
-  },
+  });
+
+  // Log Plaid configuration (without sensitive data)
+  console.log('Plaid Configuration:', {
+    environment: config.plaidEnv,
+    hasClientId: !!config.plaidClientId,
+    hasSecret: !!config.plaidSecret
+  });
+
+  req.plaidClient = new PlaidApi(configuration);
+  req.openai = new OpenAI({ apiKey: config.openaiApiKey });
+  next();
 });
-
-// Log Plaid configuration (without sensitive data)
-console.log('Plaid Configuration:', {
-  environment: plaidEnv,
-  hasClientId: !!plaidClientId,
-  hasSecret: !!plaidSecret
-});
-
-const plaidClient = new PlaidApi(configuration);
-
-// OpenAI setup
-const openai = new OpenAI({ apiKey: openaiApiKey });
 
 // Plaid endpoints
 app.post('/create-link-token', async (req, res) => {
@@ -134,7 +153,7 @@ app.post('/create-link-token', async (req, res) => {
       language: 'en'
     };
 
-    const createResponse = await plaidClient.linkTokenCreate(config);
+    const createResponse = await req.plaidClient.linkTokenCreate(config);
     console.log('✅ Link token created successfully');
     res.json({ link_token: createResponse.data.link_token });
   } catch (error) {
@@ -157,12 +176,12 @@ app.post('/exchange-token', async (req, res) => {
   if (!publicToken || !userId) return res.status(400).json({ error: 'Public token and user ID are required' });
 
   try {
-    const response = await fetch(`https://${plaidEnv}.plaid.com/item/public_token/exchange`, {
+    const response = await fetch(`https://${req.config.plaidEnv}.plaid.com/item/public_token/exchange`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'PLAID-CLIENT-ID': plaidClientId,
-        'PLAID-SECRET': plaidSecret,
+        'PLAID-CLIENT-ID': req.config.plaidClientId,
+        'PLAID-SECRET': req.config.plaidSecret,
       },
       body: JSON.stringify({ public_token: publicToken })
     });
@@ -214,12 +233,12 @@ app.post('/transactions', async (req, res) => {
     const start_date = '2024-01-01';
     const end_date = today.toISOString().split('T')[0];
     
-    const response = await fetch(`https://${plaidEnv}.plaid.com/transactions/get`, {
+    const response = await fetch(`https://${req.config.plaidEnv}.plaid.com/transactions/get`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'PLAID-CLIENT-ID': plaidClientId,
-        'PLAID-SECRET': plaidSecret,
+        'PLAID-CLIENT-ID': req.config.plaidClientId,
+        'PLAID-SECRET': req.config.plaidSecret,
       },
       body: JSON.stringify({
         access_token,
@@ -244,7 +263,7 @@ app.post('/transactions', async (req, res) => {
 app.post('/openai/chat', async (req, res) => {
   const { prompt } = req.body;
   try {
-    const completion = await openai.chat.completions.create({
+    const completion = await req.openai.chat.completions.create({
       messages: [{ role: "user", content: prompt }],
       model: "gpt-4"
     });
@@ -292,7 +311,7 @@ If the user's message is conversational or general, respond appropriately withou
     if (shouldInjectData) {
       finalMessages.push({ role: 'user', content: `Here are the user's transactions:\n${dataString}` });
     }
-    const completion = await openai.chat.completions.create({
+    const completion = await req.openai.chat.completions.create({
       model: 'gpt-4',
       messages: finalMessages,
       temperature: 0.7
@@ -320,13 +339,5 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Only start the server if running locally
-if (process.env.LOCAL_DEV === 'true') {
-  const port = process.env.PORT || 3000;
-  app.listen(port, () => {
-    console.log(`Listening locally on port ${port}`);
-  });
-}
-
-// Export the Express app for Firebase Functions
+// Only export the Express app for Firebase Functions
 export default app;
