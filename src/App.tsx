@@ -96,7 +96,7 @@ const App: React.FC = () => {
   const [selectedYear, setSelectedYear] = useState<number>(currentDate.getFullYear());
 
   const plaidConfig = getPlaidConfig();
-  
+
   // Add helper functions for budget calculations
   const calculateMonthlyMetrics = (): MonthlyMetrics | null => {
     if (!transactions.length) return null;
@@ -447,114 +447,74 @@ const App: React.FC = () => {
     }
   };
 
-  const { open, ready } = usePlaidLink({
-    token: linkToken,
-    onSuccess: (public_token, metadata) => {
-      console.log('Success:', { public_token, metadata });
-      handlePlaidSuccess(public_token);
-    },
-    onExit: (err: PlaidLinkError | null) => {
-      if (err) {
-        console.error('Plaid Link exit with error:', err);
-        setError(err.display_message || err.error_message || 'Error connecting to bank');
-      }
-    },
-    language: 'en',
-    countryCodes: ['US'],
-    env: import.meta.env.VITE_PLAID_ENV || 'sandbox',
-  });
-
+  // Plaid handlers
   const handlePlaidSuccess = async (public_token: string) => {
-    if (!user) return;
-
+    console.log('Success getting public token');
+    setIsLoading(true);
+    setError(null);
+    
     try {
-      setIsLoading(true);
-      setError(null);
+      // Exchange public token for access token
+      const userId = user?.uid;
       
-      console.log('Exchanging public token...', public_token);
-      const exchangeResponse = await fetch(getApiUrl('exchange-token'), {
+      if (!userId) {
+        throw new Error('User not authenticated');
+      }
+      
+      const apiUrl = getApiUrl('exchange-token');
+      const response = await fetch(`${apiUrl}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ publicToken: public_token, userId: user.uid }),
+        body: JSON.stringify({ 
+          publicToken: public_token,
+          userId 
+        })
       });
-
-      if (!exchangeResponse.ok) {
-        // Safely attempt to parse error response, with fallback for empty responses
-        let errorMessage;
-        try {
-          const errorData = await exchangeResponse.json();
-          errorMessage = errorData.details || 'Failed to exchange token';
-        } catch (parseError) {
-          errorMessage = `Failed to exchange token: Server returned ${exchangeResponse.status} ${exchangeResponse.statusText}`;
-        }
-        throw new Error(errorMessage);
-      }
-
-      // Combine both approaches - safely parse response with error handling
-      let responseData;
-      try {
-        responseData = await exchangeResponse.json();
-      } catch (parseError) {
-        throw new Error('Could not parse server response: ' + (parseError instanceof Error ? parseError.message : String(parseError)));
-      }
       
-      console.log('Fetching transactions...', responseData);
-      // In production, we don't send the accessToken since the server will fetch it from Firestore
-      // In development, we include it if it was returned from the server
-      const transactionPayload: { userId: string; accessToken?: string } = { userId: user.uid };
+      const data = await response.json();
       
-      // Check for token in both possible property names (with and without underscore)
-      const token = responseData.accessToken || responseData.access_token;
-      if (token) {
-        // Store token in localStorage for development persistence
-        if (process.env.NODE_ENV !== 'production') {
-          console.log('Storing access token in localStorage for development');
-          localStorage.setItem(`plaid_access_token_${user.uid}`, token);
-        }
-        
-        transactionPayload.accessToken = token;
+      if (response.ok) {
+        console.log('Successfully exchanged token');
+        setHasCompletedOnboarding(true);
+        await fetchTransactions();
+      } else {
+        throw new Error(data.error || 'Failed to exchange token');
       }
-      
-      const transactionsResponse = await fetch(getApiUrl('transactions'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(transactionPayload),
-      });
-
-      if (!transactionsResponse.ok) {
-        // Safely attempt to parse error response, with fallback for empty responses
-        let errorMessage;
-        try {
-          const errorData = await transactionsResponse.json();
-          errorMessage = errorData.details || 'Failed to fetch transactions';
-        } catch (parseError) {
-          errorMessage = `Failed to fetch transactions: Server returned ${transactionsResponse.status} ${transactionsResponse.statusText}`;
-        }
-        throw new Error(errorMessage);
-      }
-
-      // Safely parse response with error handling
-      let transactions = [], accounts = [];
-      try {
-        const data = await transactionsResponse.json();
-        if (!data.transactions || !data.accounts) {
-          throw new Error('Invalid response format');
-        }
-        transactions = data.transactions;
-        accounts = data.accounts;
-      } catch (parseError) {
-        throw new Error('Could not parse transaction data: ' + (parseError instanceof Error ? parseError.message : String(parseError)));
-      }
-      
-      setTransactions(transactions);
-      setAccounts(accounts);
-    } catch (err) {
-      console.error('Error in Plaid flow:', err);
-      setError(err instanceof Error ? err.message : 'Failed to connect bank account');
+    } catch (err: any) {
+      console.error('Error:', err);
+      setError(err.message || 'An unknown error occurred');
     } finally {
       setIsLoading(false);
     }
   };
+  
+  const handlePlaidExit = (err: PlaidLinkError | null) => {
+    if (err) {
+      console.error('Plaid Link exit with error:', err);
+      setError(err.display_message || err.error_message || 'Error connecting to bank');
+    }
+  };
+  
+  const handlePlaidEvent = (eventName: string, metadata: any) => {
+    console.log('Plaid event:', eventName, metadata);
+  };
+  
+  const handlePlaidReady = () => {
+    console.log('Plaid Link is ready');
+  };
+  
+  // Then use these handlers in the usePlaidLink hook
+  const { open, ready } = usePlaidLink({
+    token: linkToken || '',
+    onSuccess: handlePlaidSuccess,
+    onExit: handlePlaidExit,
+    onEvent: handlePlaidEvent,
+    // Use only officially supported properties
+    product: ['transactions'],
+    language: 'en',
+    countryCodes: ['US'],
+    env: plaidConfig.env as any, // Use type assertion to resolve string/number issue
+  });
 
   const handleOnboardingComplete = () => {
     setHasCompletedOnboarding(true);
