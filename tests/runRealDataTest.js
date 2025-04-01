@@ -11,7 +11,7 @@ admin.initializeApp({
 
 // Initialize Plaid
 const plaidConfig = new Configuration({
-  basePath: PlaidEnvironments.sandbox,
+  basePath: PlaidEnvironments.producion,
   baseOptions: {
     headers: {
       'PLAID-CLIENT-ID': process.env.PLAID_CLIENT_ID,

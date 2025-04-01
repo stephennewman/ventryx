@@ -148,7 +148,7 @@ if (process.env.FUNCTION_TARGET) {
 
 // Plaid client setup with environment-specific configuration
 const configuration = new Configuration({
-  basePath: PlaidEnvironments.sandbox, // Always use sandbox for testing
+  basePath: PlaidEnvironments.production, // Always use production for testing
   baseOptions: {
     headers: {
       'PLAID-CLIENT-ID': plaidClientId,
@@ -162,7 +162,7 @@ const configuration = new Configuration({
 console.log('Plaid API Headers:', {
   'PLAID-CLIENT-ID': plaidClientId ? plaidClientId.substring(0, 5) + '...' : 'Not Set',
   'PLAID-SECRET': plaidSecret ? plaidSecret.substring(0, 5) + '...' : 'Not Set',
-  basePath: PlaidEnvironments.sandbox
+  basePath: PlaidEnvironments.production
 });
 
 const plaidClient = new PlaidApi(configuration);
@@ -197,7 +197,7 @@ app.post('/create-link-token', async (req, res) => {
     }
 
     // Use fetch instead of the Plaid SDK
-    const response = await fetch('https://sandbox.plaid.com/link/token/create', {
+    const response = await fetch('https://production.plaid.com/link/token/create', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -233,7 +233,7 @@ app.post('/api/create-link-token', async (req, res) => {
     }
 
     // Use fetch instead of the Plaid SDK
-    const response = await fetch('https://sandbox.plaid.com/link/token/create', {
+    const response = await fetch('https://production.plaid.com/link/token/create', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -257,7 +257,7 @@ app.post('/exchange-token', async (req, res) => {
 
   console.log('Exchanging public token for access token...');
   try {
-    const response = await fetch('https://sandbox.plaid.com/item/public_token/exchange', {
+    const response = await fetch('https://production.plaid.com/item/public_token/exchange', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -300,7 +300,7 @@ app.post('/api/exchange-token', async (req, res) => {
 
   console.log('Exchanging public token for access token...');
   try {
-    const response = await fetch('https://sandbox.plaid.com/item/public_token/exchange', {
+    const response = await fetch('https://production.plaid.com/item/public_token/exchange', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -363,7 +363,7 @@ app.post('/transactions', async (req, res) => {
     const start_date = '2024-01-01';
     const end_date = today.toISOString().split('T')[0];
     
-    const response = await fetch('https://sandbox.plaid.com/transactions/get', {
+    const response = await fetch('https://production.plaid.com/transactions/get', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -424,7 +424,7 @@ app.post('/api/transactions', async (req, res) => {
     const start_date = '2024-01-01';
     const end_date = today.toISOString().split('T')[0];
     
-    const response = await fetch('https://sandbox.plaid.com/transactions/get', {
+    const response = await fetch('https://production.plaid.com/transactions/get', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -590,7 +590,7 @@ app.post('/debug-plaid', async (req, res) => {
 
   try {
     console.log('Attempting direct Plaid API call with fetch');
-    const response = await fetch('https://sandbox.plaid.com/link/token/create', {
+    const response = await fetch('https://production.plaid.com/link/token/create', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -621,7 +621,7 @@ app.post('/api/debug-plaid', async (req, res) => {
 
   try {
     console.log('Attempting direct Plaid API call with fetch');
-    const response = await fetch('https://sandbox.plaid.com/link/token/create', {
+    const response = await fetch('https://production.plaid.com/link/token/create', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

@@ -7,9 +7,9 @@ process.env.NODE_ENV = 'test';
 // Mock environment variables
 process.env.PLAID_CLIENT_ID = 'test-client-id';
 process.env.PLAID_SECRET = 'test-secret';
-process.env.PLAID_ENV = 'sandbox';
+process.env.PLAID_ENV = 'production';
 process.env.VITE_API_URL = 'http://localhost:5176';
-process.env.VITE_PLAID_ENV = 'sandbox';
+process.env.VITE_PLAID_ENV = '';
 
 // Mock Firebase Admin
 jest.mock('firebase-admin', () => ({
@@ -50,7 +50,7 @@ jest.mock('plaid', () => ({
     })
   })),
   PlaidEnvironments: {
-    sandbox: 'https://sandbox.plaid.com'
+    production: 'https://production.plaid.com'
   }
 }));
 

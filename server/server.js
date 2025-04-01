@@ -83,7 +83,7 @@ const plaidSecret = process.env.NODE_ENV === 'production'
 
 // Plaid client setup with environment-specific configuration
 const configuration = new Configuration({
-  basePath: process.env.NODE_ENV === 'production' ? PlaidEnvironments.production : PlaidEnvironments.sandbox,
+  basePath: process.env.NODE_ENV === 'production' ? PlaidEnvironments.production : PlaidEnvironments.production,
   baseOptions: {
     headers: {
       'PLAID-CLIENT-ID': plaidClientId,
