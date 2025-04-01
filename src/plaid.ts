@@ -1,5 +1,4 @@
 import { Configuration, PlaidApi, PlaidEnvironments } from 'plaid';
-import { getPlaidConfig } from './config/plaid';
 
 export interface Account {
   account_id: string;
@@ -18,26 +17,21 @@ export interface Account {
 export interface Transaction {
   transaction_id: string;
   account_id: string;
-  amount: number;
   date: string;
   name: string;
-  merchant_name?: string;
-  pending: boolean;
+  amount: number;
+  iso_currency_code: string;
   category: string[];
-  location?: {
-    address?: string;
-    city?: string;
-    state?: string;
-    postal_code?: string;
-  };
+  category_id: string;
   payment_channel?: string;
 }
 
-// Create the configuration for the Plaid client
-const plaidConfig = getPlaidConfig();
+// Determine the Plaid environment from environment variables
+const plaidEnv = import.meta.env.VITE_PLAID_ENV as keyof typeof PlaidEnvironments || 'sandbox';
+console.log(`Using Plaid ${plaidEnv} environment in plaid.ts`);
 
 const configuration = new Configuration({
-  basePath: plaidConfig.basePath,
+  basePath: PlaidEnvironments[plaidEnv],
   baseOptions: {
     headers: {
       'PLAID-CLIENT-ID': import.meta.env.VITE_PLAID_CLIENT_ID,

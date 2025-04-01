@@ -1,24 +1,11 @@
 import { Configuration, PlaidApi, PlaidEnvironments } from 'plaid';
 
-// Centralized Plaid configuration
-export const getPlaidConfig = () => {
-  const env = import.meta.env.VITE_PLAID_ENV || 'sandbox';
-  
-  return {
-    environment: env,
-    basePath: PlaidEnvironments[env],
-    clientName: 'Ventryx',
-    products: ['transactions'],
-    countryCodes: ['US'],
-    language: 'en'
-  };
-};
-
-// Create the configuration for the Plaid client
-const plaidConfig = getPlaidConfig();
+// Determine the Plaid environment from environment variables
+const plaidEnv = import.meta.env.VITE_PLAID_ENV as keyof typeof PlaidEnvironments || 'sandbox';
+console.log(`Using Plaid ${plaidEnv} environment in config/plaid.ts`);
 
 const configuration = new Configuration({
-  basePath: plaidConfig.basePath,
+  basePath: PlaidEnvironments[plaidEnv],
   baseOptions: {
     headers: {
       'PLAID-CLIENT-ID': import.meta.env.VITE_PLAID_CLIENT_ID,

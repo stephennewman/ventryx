@@ -34,6 +34,8 @@ if (!process.env.FUNCTION_TARGET) {  // Skip if running as a Firebase function
   // Add debug logging for important environment variables
   console.log('Environment:', {
     NODE_ENV: process.env.NODE_ENV,
+    PLAID_ENV: process.env.PLAID_ENV,
+    VITE_PLAID_ENV: process.env.VITE_PLAID_ENV,
     VITE_API_URL: process.env.VITE_API_URL,
     PORT: process.env.PORT,
     hasPlaidClientId: !!process.env.PLAID_CLIENT_ID,
@@ -156,7 +158,8 @@ if (!plaidClientId || !plaidSecret) {
 }
 
 // Determine environment for Plaid API
-const plaidEnv = process.env.NODE_ENV === 'production' ? 'production' : 'sandbox';
+const plaidEnv = process.env.PLAID_ENV || (process.env.NODE_ENV === 'production' ? 'production' : 'sandbox');
+console.log(`Using Plaid environment: ${plaidEnv} (from PLAID_ENV or NODE_ENV)`);
 const plaidBaseUrl = `https://${plaidEnv}.plaid.com`;
 
 // Plaid client setup with environment-specific configuration
