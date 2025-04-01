@@ -77,6 +77,17 @@ This will:
 - `NETLIFY_AUTH_TOKEN`: For automated Netlify deployments
 - `NETLIFY_STAGING_SITE_ID`: For staging deployments
 
+### Netlify Environment Variables
+
+It's critical to set these environment variables in your Netlify site settings:
+
+1. Go to Netlify dashboard > Your site > Site settings > Environment variables
+2. Add all required `VITE_` prefixed variables including:
+   - `VITE_PLAID_ENV` (set to `sandbox` for staging, `production` for production)
+   - `VITE_PLAID_CLIENT_ID`
+   - `VITE_PLAID_SECRET`
+3. Deploy or redeploy your site after changing environment variables
+
 ## Verification Steps
 
 After deployment, verify:
