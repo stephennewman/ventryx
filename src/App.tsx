@@ -395,14 +395,35 @@ const App: React.FC = () => {
       try {
         setIsLoading(true);
         setError(null);
+        
+        console.log('Requesting link token from API URL:', getApiUrl('create-link-token'));
+        
         const response = await fetch(getApiUrl('create-link-token'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ userId: user.uid }),
         });
 
+        if (!response.ok) {
+          let errorMessage;
+          try {
+            const errorData = await response.json();
+            errorMessage = errorData.details || `Server returned ${response.status} ${response.statusText}`;
+          } catch (e) {
+            errorMessage = `Server returned ${response.status} ${response.statusText}`;
+          }
+          throw new Error(`Failed to create link token: ${errorMessage}`);
+        }
+
         const data = await response.json();
+        console.log('Link token response:', data);
+        
+        if (!data.link_token) {
+          throw new Error('No link token received from server');
+        }
+        
         setLinkToken(data.link_token);
+        console.log('Link token set successfully (truncated):', data.link_token.substring(0, 10) + '...');
       } catch (err) {
         console.error('Error creating link token:', err);
         setError(err instanceof Error ? err.message : 'Failed to create link token');

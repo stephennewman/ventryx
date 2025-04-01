@@ -21,6 +21,12 @@ const plaidClient = new PlaidApi(configuration);
 
 app.post('/api/create-link-token', async (req, res) => {
   try {
+    console.log('Creating link token with Plaid API...');
+    console.log('User ID:', req.body.userId);
+    console.log('Environment:', process.env.NODE_ENV);
+    console.log('Plaid Client ID:', process.env.PLAID_CLIENT_ID);
+    console.log('Plaid Secret length:', process.env.PLAID_SECRET ? process.env.PLAID_SECRET.length : 'undefined');
+    
     const response = await plaidClient.linkTokenCreate({
       user: { client_user_id: req.body.userId },
       client_name: 'Ventryx',
@@ -28,10 +34,12 @@ app.post('/api/create-link-token', async (req, res) => {
       country_codes: ['US'],
       language: 'en'
     });
+    console.log('Link token created successfully:', response.data.link_token.substring(0, 10) + '...');
     res.json({ link_token: response.data.link_token });
   } catch (error) {
     console.error('Error creating link token:', error);
-    res.status(500).json({ error: 'Failed to create link token' });
+    console.error('Error details:', error.response?.data || 'No detailed error info');
+    res.status(500).json({ error: 'Failed to create link token', details: error.message });
   }
 });
 
