@@ -458,7 +458,7 @@ const App: React.FC = () => {
     },
     language: 'en',
     countryCodes: ['US'],
-    env: 'sandbox',
+    env: 'production',
   });
 
   const handlePlaidSuccess = async (public_token: string) => {

@@ -36,7 +36,7 @@ jest.mock('plaid', () => {
     Configuration: jest.fn(),
     PlaidApi: jest.fn(() => mockPlaidApi),
     PlaidEnvironments: {
-      sandbox: 'https://sandbox.plaid.com'
+      production: 'https://production.plaid.com'
     }
   };
 });
