@@ -37,10 +37,26 @@ if (!admin.apps.length) {
 const db = getFirestore();
 
 // Define configuration parameters
-const plaidClientId = defineString('PLAID_CLIENT_ID');
-const plaidSecret = defineString('PLAID_SECRET');
-const plaidEnv = defineString('PLAID_ENV', { default: 'sandbox' });
-const openaiApiKey = defineString('OPENAI_API_KEY');
+let plaidClientId, plaidSecret, plaidEnv, openaiApiKey;
+
+const isFirebase = !!(process.env.FUNCTION_NAME || process.env.FIREBASE_CONFIG || process.env.GCLOUD_PROJECT);
+
+if (isFirebase) {
+  // Firebase Functions Params
+  const { defineString } = await import('firebase-functions/params');
+  plaidClientId = defineString('PLAID_CLIENT_ID').value();
+  plaidSecret = defineString('PLAID_SECRET').value();
+  plaidEnv = defineString('PLAID_ENV', { default: 'sandbox' }).value();
+  openaiApiKey = defineString('OPENAI_API_KEY').value();
+} else {
+  // Non-Firebase environments (Netlify/local dev)
+  dotenv.config();
+  plaidClientId = process.env.PLAID_CLIENT_ID || process.env.VITE_PLAID_CLIENT_ID;
+  plaidSecret = process.env.PLAID_SECRET || process.env.VITE_PLAID_SECRET;
+  plaidEnv = process.env.PLAID_ENV || process.env.VITE_PLAID_ENV || 'sandbox';
+  openaiApiKey = process.env.OPENAI_API_KEY;
+}
+
 
 // Create the Express app instance
 const app = express();
