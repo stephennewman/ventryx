@@ -109,6 +109,7 @@ app.post('/create-link-token', async (req, res) => {
   if (!userId) return res.status(400).json({ error: 'User ID is required' });
 
   try {
+    console.log('🔵 Creating link token for user:', userId);
     const config = {
       user: { client_user_id: userId },
       client_name: 'Ventryx',
@@ -117,21 +118,21 @@ app.post('/create-link-token', async (req, res) => {
       language: 'en'
     };
 
-    const response = await fetch(`https://${plaidEnv}.plaid.com/link/token/create`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'PLAID-CLIENT-ID': plaidClientId,
-        'PLAID-SECRET': plaidSecret,
-      },
-      body: JSON.stringify(config)
-    });
-    
-    const data = await response.json();
-    res.json({ link_token: data.link_token });
+    const createResponse = await plaidClient.linkTokenCreate(config);
+    console.log('✅ Link token created successfully');
+    res.json({ link_token: createResponse.data.link_token });
   } catch (error) {
-    console.error('Plaid create-link-token error:', error);
-    res.status(500).json({ error: 'Failed to create link token', details: error.message });
+    console.error("❌ Plaid linkTokenCreate failed:", {
+      error: error.response?.data || error,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      config: error.config
+    });
+    res.status(500).json({ 
+      error: 'Failed to create link token', 
+      details: error.response?.data?.error_message || error.message,
+      code: error.response?.data?.error_code
+    });
   }
 });
 
