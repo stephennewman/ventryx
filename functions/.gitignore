@@ -1,2 +1,22 @@
+# Dependencies
 node_modules/
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Firebase
+.firebase/
+firebase-debug.log
+ui-debug.log
+
+# Service account keys
+*-service-account.json
+service-account.json
+
+# Build files
+dist/
+build/
+*.log
 *.local

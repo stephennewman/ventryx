@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "dev": "concurrently \"npm run backend\" \"npm run frontend\"",
-    "backend": "node functions/server/server.js",
+    "backend": "LOCAL_DEV=true node dev-server.js",
     "frontend": "vite",
     "build": "npx vite build --mode production",
     "build:staging": "npx vite build --mode staging",

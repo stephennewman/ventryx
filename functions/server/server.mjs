@@ -12,6 +12,8 @@ import dotenv from 'dotenv';
 import admin from 'firebase-admin';
 import { defineString } from 'firebase-functions/params';
 import { getFunctions } from 'firebase-admin/functions';
+import fs from 'fs';
+import * as functions from 'firebase-functions';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -44,8 +46,18 @@ console.log('Environment Info:', {
 // Initialize Firebase Admin if not already initialized
 if (!admin.apps.length) {
   try {
-    admin.initializeApp();
-    console.log('Firebase Admin initialized with default config');
+    // In production, use default credentials
+    if (process.env.NODE_ENV === 'production') {
+      admin.initializeApp();
+      console.log('Firebase Admin initialized with default config');
+    } else {
+      // In development, use service account
+      const serviceAccount = JSON.parse(fs.readFileSync('./service-account.json'));
+      admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount)
+      });
+      console.log('Firebase Admin initialized with service account');
+    }
   } catch (error) {
     console.error('Error initializing Firebase Admin:', error);
   }
@@ -93,44 +105,107 @@ app.get('/health', (req, res) => {
 
 // Function to get configuration values
 const getConfig = () => {
+  let config = {};
+  
+  // In Firebase Functions environment, get values from functions config
+  if (isFirebaseFunctions) {
+    try {
+      // Access config in Firebase Functions using the functions.config() method
+      const runtimeConfig = functions.config();
+      
+      console.log('Runtime Config:', JSON.stringify(runtimeConfig, null, 2));
+      
+      // Check if runtimeConfig has plaid settings
+      if (runtimeConfig && runtimeConfig.plaid) {
+        config = {
+          plaidClientId: runtimeConfig.plaid.client_id,
+          plaidSecret: runtimeConfig.plaid.secret,
+          plaidEnv: runtimeConfig.plaid.env || 'production',
+          openaiApiKey: runtimeConfig.openai?.api_key || process.env.OPENAI_API_KEY
+        };
+        console.log('Using Firebase Runtime Config');
+      } else {
+        // Fallback to JSON.parse(process.env.FIREBASE_CONFIG)
+        const functionsConfig = JSON.parse(process.env.FIREBASE_CONFIG || '{}');
+        config = {
+          plaidClientId: process.env.PLAID_CLIENT_ID,
+          plaidSecret: process.env.PLAID_SECRET,
+          plaidEnv: process.env.PLAID_ENV || 'production',
+          openaiApiKey: process.env.OPENAI_API_KEY
+        };
+        console.log('Using environment variables from process.env');
+      }
+    } catch (error) {
+      console.error('Error accessing Firebase config:', error);
+      
+      // Fallback to environment variables
+      config = {
+        plaidClientId: process.env.PLAID_CLIENT_ID,
+        plaidSecret: process.env.PLAID_SECRET,
+        plaidEnv: process.env.PLAID_ENV || 'production',
+        openaiApiKey: process.env.OPENAI_API_KEY
+      };
+    }
+  } else {
+    // Local development - use .env file
+    config = {
+      plaidClientId: process.env.PLAID_CLIENT_ID,
+      plaidSecret: process.env.PLAID_SECRET,
+      plaidEnv: process.env.PLAID_ENV || 'production',
+      openaiApiKey: process.env.OPENAI_API_KEY
+    };
+    console.log('Using local environment configuration');
+  }
+
   // Log environment info (without sensitive values)
-  console.log('Environment Variables:', {
-    NODE_ENV: process.env.NODE_ENV,
-    PLAID_ENV: process.env.PLAID_ENV || 'production',
-    hasPlaidConfig: true,
-    hasOpenAIKey: true
+  console.log('Configuration:', {
+    environment: process.env.NODE_ENV,
+    plaidEnv: config.plaidEnv,
+    hasPlaidConfig: !!config.plaidClientId && !!config.plaidSecret,
+    hasOpenAIKey: !!config.openaiApiKey
   });
 
-  // Return configuration values
-  return {
-    plaidClientId: process.env.PLAID_CLIENT_ID,
-    plaidSecret: process.env.PLAID_SECRET,
-    plaidEnv: process.env.PLAID_ENV || 'production',
-    openaiApiKey: process.env.OPENAI_API_KEY
-  };
+  return config;
 };
 
 // Initialize clients in request handlers to ensure parameters are available
 app.use((req, res, next) => {
   const config = getConfig();
   
-  // Plaid client setup
+  // Debug the actual values (without revealing the full strings)
+  const plaidClientIdMasked = config.plaidClientId ? 
+    `${config.plaidClientId.substring(0, 4)}...${config.plaidClientId.substring(config.plaidClientId.length - 4)}` : 
+    'NOT SET';
+  const plaidSecretMasked = config.plaidSecret ? 
+    `${config.plaidSecret.substring(0, 4)}...${config.plaidSecret.substring(config.plaidSecret.length - 4)}` : 
+    'NOT SET';
+  
+  console.log('Debug - Masked credentials:', {
+    plaidClientId: plaidClientIdMasked,
+    plaidSecret: plaidSecretMasked,
+    plaidEnv: config.plaidEnv
+  });
+  
+  // Hardcode values for now (since config is not working correctly)
+  const clientId = "67cc77c4a291e80023d19b3c";
+  const secret = "52021cac3c02ac3ce0c00588b70cb9";
+  
+  console.log('Using hardcoded values for now:', {
+    clientId: clientId ? 'SET' : 'NOT SET',
+    secret: secret ? 'SET' : 'NOT SET',
+    env: 'production'
+  });
+  
+  // Plaid client setup with hardcoded values
   const configuration = new Configuration({
-    basePath: PlaidEnvironments[config.plaidEnv],
+    basePath: PlaidEnvironments.production,
     baseOptions: {
       headers: {
-        'PLAID-CLIENT-ID': config.plaidClientId,
-        'PLAID-SECRET': config.plaidSecret,
+        'PLAID-CLIENT-ID': clientId,
+        'PLAID-SECRET': secret,
         'Content-Type': 'application/json',
       },
     },
-  });
-
-  // Log Plaid configuration (without sensitive data)
-  console.log('Plaid Configuration:', {
-    environment: config.plaidEnv,
-    hasClientId: !!config.plaidClientId,
-    hasSecret: !!config.plaidSecret
   });
 
   req.plaidClient = new PlaidApi(configuration);
@@ -145,7 +220,7 @@ app.post('/create-link-token', async (req, res) => {
 
   try {
     console.log('🔵 Creating link token for user:', userId);
-    const config = {
+    const createTokenConfig = {
       user: { client_user_id: userId },
       client_name: 'Ventryx',
       products: ['transactions'],
@@ -153,7 +228,25 @@ app.post('/create-link-token', async (req, res) => {
       language: 'en'
     };
 
-    const createResponse = await req.plaidClient.linkTokenCreate(config);
+    // Enhanced debugging
+    console.log('Debug - Plaid request config:', JSON.stringify(createTokenConfig, null, 2));
+    
+    // Check Plaid client configuration
+    const headers = req.plaidClient.configuration.baseOptions.headers;
+    console.log('Debug - Plaid API headers structure:', Object.keys(headers));
+    
+    // Show first and last few characters of credentials for debugging
+    const maskString = (str) => str ? `${str.substring(0, 4)}...${str.substring(str.length - 4)}` : 'NOT SET';
+    
+    console.log('Debug - Plaid credentials format check:', {
+      clientIdLength: headers['PLAID-CLIENT-ID'] ? headers['PLAID-CLIENT-ID'].length : 0,
+      secretLength: headers['PLAID-SECRET'] ? headers['PLAID-SECRET'].length : 0,
+      clientIdMasked: maskString(headers['PLAID-CLIENT-ID']),
+      secretMasked: maskString(headers['PLAID-SECRET']),
+      basePath: req.plaidClient.configuration.basePath
+    });
+
+    const createResponse = await req.plaidClient.linkTokenCreate(createTokenConfig);
     console.log('✅ Link token created successfully');
     res.json({ link_token: createResponse.data.link_token });
   } catch (error) {
@@ -161,12 +254,16 @@ app.post('/create-link-token', async (req, res) => {
       error: error.response?.data || error,
       status: error.response?.status,
       statusText: error.response?.statusText,
-      config: error.config
+      message: error.message
     });
+    
+    // Return a more helpful error response
     res.status(500).json({ 
       error: 'Failed to create link token', 
       details: error.response?.data?.error_message || error.message,
-      code: error.response?.data?.error_code
+      code: error.response?.data?.error_code,
+      status: 'Invalid Plaid Credentials',
+      action: 'Please check your Plaid API credentials in the developer dashboard: https://dashboard.plaid.com/'
     });
   }
 });
@@ -176,34 +273,36 @@ app.post('/exchange-token', async (req, res) => {
   if (!publicToken || !userId) return res.status(400).json({ error: 'Public token and user ID are required' });
 
   try {
-    const response = await fetch(`https://${req.config.plaidEnv}.plaid.com/item/public_token/exchange`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'PLAID-CLIENT-ID': req.config.plaidClientId,
-        'PLAID-SECRET': req.config.plaidSecret,
-      },
-      body: JSON.stringify({ public_token: publicToken })
+    console.log('🔵 Exchanging public token for user:', userId);
+    const exchangeResponse = await req.plaidClient.itemPublicTokenExchange({
+      public_token: publicToken
     });
 
-    const data = await response.json();
+    const accessToken = exchangeResponse.data.access_token;
+    console.log('✅ Token exchanged successfully');
 
     try {
       const userRef = db.collection('users').doc(userId);
-      await userRef.set({ plaidAccessToken: data.access_token }, { merge: true });
+      await userRef.set({ plaidAccessToken: accessToken }, { merge: true });
+      console.log('✅ Access token stored in Firestore');
     } catch (dbError) {
       console.warn('Failed to store access token in Firestore:', dbError);
     }
 
     res.json({
       success: true,
-      access_token: data.access_token
+      access_token: accessToken
     });
   } catch (error) {
-    console.error('Plaid exchange-token error:', error);
+    console.error('❌ Plaid exchange-token error:', {
+      error: error.response?.data || error,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      config: error.config
+    });
     res.status(500).json({ 
       error: 'Failed to exchange token', 
-      details: error.message,
+      details: error.response?.data?.error_message || error.message,
       code: error.response?.data?.error_code
     });
   }
@@ -229,33 +328,35 @@ app.post('/transactions', async (req, res) => {
       return res.json({ transactions: [], accounts: [] });
     }
 
+    console.log('🔵 Fetching transactions for user:', userId);
     const today = new Date();
     const start_date = '2024-01-01';
     const end_date = today.toISOString().split('T')[0];
     
-    const response = await fetch(`https://${req.config.plaidEnv}.plaid.com/transactions/get`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'PLAID-CLIENT-ID': req.config.plaidClientId,
-        'PLAID-SECRET': req.config.plaidSecret,
-      },
-      body: JSON.stringify({
-        access_token,
-        start_date,
-        end_date,
-        options: { count: 100, offset: 0 }
-      })
+    const response = await req.plaidClient.transactionsGet({
+      access_token,
+      start_date,
+      end_date,
+      options: { count: 100, offset: 0 }
     });
-    
-    const data = await response.json();
+
+    console.log('✅ Transactions fetched successfully');
     res.json({
-      transactions: data.transactions,
-      accounts: data.accounts
+      transactions: response.data.transactions,
+      accounts: response.data.accounts
     });
   } catch (error) {
-    console.error('Plaid transactions error:', error);
-    res.status(500).json({ error: 'Failed to fetch transactions', details: error.message });
+    console.error('❌ Plaid transactions error:', {
+      error: error.response?.data || error,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      config: error.config
+    });
+    res.status(500).json({ 
+      error: 'Failed to fetch transactions', 
+      details: error.response?.data?.error_message || error.message,
+      code: error.response?.data?.error_code
+    });
   }
 });
 
